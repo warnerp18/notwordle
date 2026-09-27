@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "@/app/globals.css";
+import { Analytics } from "@vercel/analytics/next";
 
 const description =
   "A free Wordle-style word game. Guess the hidden five-letter word - a new random word every game.";
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en">
       <body className="min-h-full flex flex-col">{children}</body>
+      <Analytics />
     </html>
   );
 }
