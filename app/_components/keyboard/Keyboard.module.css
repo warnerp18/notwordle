@@ -1,0 +1,50 @@
+.keyboard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.row {
+  display: flex;
+  gap: 6px;
+}
+
+.key {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 58px;
+  padding: 0;
+  background-color: var(--color-key);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 1.25em;
+  font-weight: bold;
+  text-transform: uppercase;
+  border: 0;
+  border-radius: var(--radius);
+  cursor: pointer;
+  user-select: none;
+}
+
+.key:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.key:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Enter and Backspace are 1.5 keys wide */
+.special {
+  flex: 1.5;
+  font-size: 12px;
+}
+
+/* half-key gap at each end of the middle row */
+.spacer {
+  flex: 0.5;
+}

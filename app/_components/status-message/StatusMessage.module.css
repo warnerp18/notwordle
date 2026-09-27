@@ -1,0 +1,59 @@
+/* fixed height so the space is always reserved and nothing jumps */
+.container {
+  height: var(--status-height);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 50px 0;
+}
+
+/* white box used for the answer and warnings */
+.message {
+  margin: 0;
+  padding: 14px 18px;
+  background-color: var(--color-text);
+  color: var(--color-bg);
+  font-weight: bold;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  border-radius: var(--radius);
+}
+
+.winner {
+  background-color: var(--color-correct);
+  color: var(--color-text);
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 14px;
+}
+
+.reset {
+  padding: 12px 28px;
+  background-color: var(--color-correct);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  border: none;
+  border-radius: 999px; /* pill shape */
+  cursor: pointer;
+}
+
+.reset:hover {
+  filter: brightness(1.1);
+}
