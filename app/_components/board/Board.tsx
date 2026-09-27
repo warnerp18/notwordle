@@ -8,6 +8,7 @@ interface BoardProps {
   answer: string;
   warningId: number;
   warning: string | null;
+  gameOver: boolean;
 }
 
 const Board = ({
@@ -16,7 +17,9 @@ const Board = ({
   answer,
   warningId,
   warning,
+  gameOver,
 }: BoardProps) => {
+  console.log({ answer });
   return (
     <div className={styles.board}>
       {rowArray.map((_row, rowIndex) => {
@@ -29,7 +32,11 @@ const Board = ({
         return (
           <div
             key={activeRow ? `${rowIndex}-${warningId}` : rowIndex}
-            className={`${styles.row} ${activeRow && warning ? styles.shake : ""}`}>
+            className={`
+              ${styles.row} 
+              ${activeRow && warning ? styles.shake : ""}
+              ${activeRow && !gameOver ? styles.active : ""}
+            `}>
             {columnArray.map((_column, columnIndex) => {
               const color = bgColor?.[columnIndex];
               return (
@@ -37,6 +44,7 @@ const Board = ({
                   key={columnIndex}
                   className={`
                     ${styles.tile}
+                  
                     ${activeRow && rowWord?.[columnIndex] ? styles.filled : ""}
                     ${color ? styles[color] : ""}
                     `}>

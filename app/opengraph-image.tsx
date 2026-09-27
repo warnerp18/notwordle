@@ -31,44 +31,43 @@ const ROWS: { letter: string; color: string }[][] = [
 
 export default function OpengraphImage() {
   return new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 16,
-          background: BG,
-          color: TEXT,
-        }}>
-        {ROWS.map((row, rowIndex) => (
-          <div key={rowIndex} style={{ display: "flex", gap: 16 }}>
-            {row.map((tile, i) => (
-              <div
-                key={i}
-                style={{
-                  width: 120,
-                  height: 120,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: tile.color,
-                  fontSize: 72,
-                  fontWeight: 700,
-                }}>
-                {tile.letter}
-              </div>
-            ))}
-          </div>
-        ))}
-        <div style={{ display: "flex", marginTop: 32, fontSize: 36, color: MUTED }}>
-          notwordle.app
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 16,
+        background: BG,
+        color: TEXT,
+      }}>
+      {ROWS.map((row, rowIndex) => (
+        <div key={rowIndex} style={{ display: "flex", gap: 16 }}>
+          {row.map((tile, i) => (
+            <div
+              key={i}
+              style={{
+                width: 120,
+                height: 120,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: tile.color,
+                fontSize: 72,
+                fontWeight: 700,
+              }}>
+              {tile.letter}
+            </div>
+          ))}
         </div>
+      ))}
+      <div
+        style={{ display: "flex", marginTop: 32, fontSize: 36, color: MUTED }}>
+        notwordle.app
       </div>
-    ),
+    </div>,
     { ...size },
   );
 }

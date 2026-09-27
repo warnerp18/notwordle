@@ -75,7 +75,6 @@ export default function App() {
   }, []);
 
   return (
-    // page layout: centered column, keyboard pinned to the bottom on phones, stacked under the board on wider screens
     <div className="mx-auto flex h-dvh w-full max-w-(--app-max-width) flex-col justify-between px-2 py-[25px] min-[520px]:justify-start">
       <StatusMessage
         gameOver={gameOver}
@@ -91,6 +90,7 @@ export default function App() {
         answer={answer}
         warningId={warningId}
         warning={warning}
+        gameOver={gameOver}
       />
       <Keyboard buttonPress={handleKey} disabled={gameOver} />
     </div>

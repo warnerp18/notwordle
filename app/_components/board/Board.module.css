@@ -28,8 +28,14 @@
   user-select: none;
 }
 
+.active .tile {
+  border-color: var(--color-tile-active);
+  background-color: rgb(255 255 255 / 0.05);
+}
+
 .filled {
   border-color: var(--color-tile-filled);
+  animation: pop 0.1s;
 }
 
 .green {
@@ -63,5 +69,22 @@
   40%,
   80% {
     transform: translateX(6px);
+  }
+}
+
+@keyframes pop {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filled,
+  .shake {
+    animation: none;
   }
 }
