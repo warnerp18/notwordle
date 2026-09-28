@@ -14,6 +14,7 @@ A Wordle-style word game built with Next.js. Guess the hidden five-letter word i
 - Win and lose messages, with a button to start a new game
 - Current row is highlighted, and tiles pop as you type
 - Animations turn off for people with "Reduce motion" enabled
+- Works with screen readers: the board, rows and tiles are labeled, and each tile says whether its letter is correct, present or absent
 - Link-preview image and app icons when the link is shared
 
 ## Tech stack
@@ -22,6 +23,7 @@ A Wordle-style word game built with Next.js. Guess the hidden five-letter word i
 - React 19.2 with the [React Compiler](https://react.dev/learn/react-compiler)
 - TypeScript (strict mode)
 - Tailwind CSS v4 for page layout, CSS Modules for component styles
+- [Jest](https://jestjs.io) and [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) for tests
 - Deployed on [Vercel](https://vercel.com)
 
 ## How it works
@@ -53,6 +55,26 @@ The game stores only three things: the answer, the submitted guesses, and the gu
 
 The physical keyboard and the on-screen keyboard both call the same `handleKey(key)` function, so they can't behave differently. The physical keyboard listener uses React's [`useEffectEvent`](https://react.dev/reference/react/useEffectEvent), so it's added once when the game loads but always sees the latest state.
 
+### Accessible by design
+
+The board is built from `<div>`s, which mean nothing to a screen reader, so each layer gets a role and a name:
+
+- The board and each row are named groups ("Game board", "Row 1" … "Row 6"), and the row you're typing in is marked with `aria-current`.
+- Each tile is labeled with its letter and what its color means, like "R, present", so the result doesn't rely on color alone.
+- The keyboard uses real `<button>`s, which are accessible out of the box. The icon-only Backspace key gets an `aria-label`.
+
+## Testing
+
+Tests find elements the way a player would: by role and label, not by CSS class. Because of this, they double as a check that the game works with a screen reader.
+
+- **[`colors.test.ts`](app/lib/colors.test.ts)** covers the color logic, including repeated letters and greens taking priority.
+- **[`Board.test.tsx`](app/_components/board/Board.test.tsx)** and **[`Keyboard.test.tsx`](app/_components/keyboard/Keyboard.test.tsx)** test each component on its own. The keyboard uses a mock function to check which key was sent.
+- **[`Game.test.tsx`](app/_components/game/Game.test.tsx)** plays whole games with [user-event](https://testing-library.com/docs/user-event/intro/): typing, short-guess warnings, winning, losing and starting again. The random answer is fixed so that each test knows the word.
+
+```bash
+npm test
+```
+
 ## Project structure
 
 ```
@@ -67,6 +89,7 @@ app/
     constants.ts     Board size and word list
   layout.tsx         Page metadata
   icon.svg, apple-icon.tsx, opengraph-image.tsx   Icons and share image
+  **/*.test.ts(x)    Tests, next to the code they test
 ```
 
 ## Running locally

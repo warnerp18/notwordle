@@ -8,13 +8,14 @@ const eslintConfig = defineConfig([
   {
     rules: {
       // always import through the "@/" alias instead of "./" or "../"
+      // same-directory "./" imports are allowed; only "../" is blocked
       "no-restricted-imports": [
         "error",
         {
           patterns: [
             {
-              regex: "^\\.{1,2}/",
-              message: 'Use the "@/" alias instead of a relative import.',
+              regex: "^\\.\\./",
+              message: 'Use the "@/" alias instead of a "../" import.',
             },
           ],
         },
