@@ -1,0 +1,90 @@
+import { startGame, submitGuess } from "@/app/lib/actions";
+import { Color } from "@/app/lib/colors";
+import { useEffect, useState } from "react";
+
+interface GameShape {
+  answer: string | null;
+  previousGuesses: string[];
+  colors: Color[][];
+}
+const gameInitialValue = {
+  answer: null,
+  previousGuesses: [],
+  colors: [],
+};
+
+const useGame = () => {
+  const [gameId, setGameId] = useState<string | null>(null);
+  const [game, setGame] = useState<GameShape>(gameInitialValue);
+  const [isFetching, setIsFetching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const newGame = async () => {
+    setIsFetching(true);
+    setGameId(null);
+    setError(null);
+    setGame(gameInitialValue);
+
+    try {
+      const id = await startGame();
+
+      setGameId(id);
+    } catch {
+      setError("Something went wrong. Try again.");
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  const makeGuess = async (guess: string) => {
+    if (gameId) {
+      setError(null);
+      setIsFetching(true);
+      try {
+        const gameResults = await submitGuess(guess, gameId);
+
+        setGame(gameResults);
+        return true;
+      } catch {
+        setError("Something went wrong. Try again.");
+        return false;
+      } finally {
+        setIsFetching(false);
+      }
+    } else {
+      return false;
+    }
+  };
+
+  // first load: no isFetching needed, isReady stays false until the id arrives
+  useEffect(() => {
+    let ignore = false;
+    const beginGame = async () => {
+      try {
+        const id = await startGame();
+        if (!ignore) {
+          setGameId(id);
+        }
+      } catch {
+        setError("Something went wrong. Try again.");
+      }
+    };
+
+    beginGame();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  return {
+    isFetching,
+    ...game,
+    isReady: !!gameId,
+    newGame,
+    makeGuess,
+    error,
+  };
+};
+
+export default useGame;

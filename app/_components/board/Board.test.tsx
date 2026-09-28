@@ -1,6 +1,11 @@
 import Board from "./Board";
+import { calculateWordColors } from "@/app/lib/colors";
 
 import { render, screen, within } from "@testing-library/react";
+
+// the server sends one row of colors per guess; build them the same way
+const colorsFor = (answer: string, guesses: string[]) =>
+  guesses.map((guess) => calculateWordColors(answer, guess));
 
 describe("<Board />", () => {
   it("renders an empty board with 6 rows of empty tiles", () => {
@@ -8,9 +13,10 @@ describe("<Board />", () => {
       <Board
         previousGuesses={[]}
         currentGuess={""}
-        answer={""}
+        colors={[]}
         warningId={0}
         warning={null}
+        isFetching={false}
         gameOver={false}
       />,
     );
@@ -28,9 +34,10 @@ describe("<Board />", () => {
       <Board
         previousGuesses={["CHAIR"]}
         currentGuess={"TOW"}
-        answer={"REACT"}
+        colors={colorsFor("REACT", ["CHAIR"])}
         warningId={0}
         warning={null}
+        isFetching={false}
         gameOver={false}
       />,
     );
@@ -60,9 +67,10 @@ describe("<Board />", () => {
       <Board
         previousGuesses={["CHAIR"]}
         currentGuess={""}
-        answer={"REACT"}
+        colors={colorsFor("REACT", ["CHAIR"])}
         warningId={0}
         warning={null}
+        isFetching={false}
         gameOver={false}
       />,
     );
@@ -85,9 +93,10 @@ describe("<Board />", () => {
       <Board
         previousGuesses={["CHAIR"]}
         currentGuess={"TOW"}
-        answer={"REACT"}
+        colors={colorsFor("REACT", ["CHAIR"])}
         warningId={0}
         warning={null}
+        isFetching={false}
         gameOver={false}
       />,
     );
@@ -102,9 +111,10 @@ describe("<Board />", () => {
       <Board
         previousGuesses={["REACT"]}
         currentGuess={""}
-        answer={"REACT"}
+        colors={colorsFor("REACT", ["REACT"])}
         warningId={0}
         warning={null}
+        isFetching={false}
         gameOver={true}
       />,
     );
@@ -117,9 +127,10 @@ describe("<Board />", () => {
       <Board
         previousGuesses={["REACT"]}
         currentGuess={""}
-        answer={"REACT"}
+        colors={colorsFor("REACT", ["REACT"])}
         warningId={0}
         warning={null}
+        isFetching={false}
         gameOver={true}
       />,
     );
@@ -143,9 +154,10 @@ describe("<Board />", () => {
       <Board
         previousGuesses={guesses}
         currentGuess={""}
-        answer={"REACT"}
+        colors={colorsFor("REACT", guesses)}
         warningId={0}
         warning={null}
+        isFetching={false}
         gameOver={true}
       />,
     );
@@ -163,5 +175,24 @@ describe("<Board />", () => {
 
     expect(screen.queryAllByRole("img", { name: "Empty" })).toHaveLength(0);
     expect(screen.queryByRole("group", { current: true })).toBeNull();
+  });
+
+  it("tells screen readers the board is busy while a guess is being checked", () => {
+    render(
+      <Board
+        previousGuesses={[]}
+        currentGuess={"CHAIR"}
+        colors={[]}
+        warningId={0}
+        warning={null}
+        isFetching={true}
+        gameOver={false}
+      />,
+    );
+
+    expect(screen.getByRole("group", { name: "Game board" })).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
   });
 });

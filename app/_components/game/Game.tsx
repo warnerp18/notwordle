@@ -3,48 +3,29 @@ import { useEffect, useEffectEvent, useState } from "react";
 import Keyboard from "@/app/_components/keyboard/Keyboard";
 import Board from "@/app/_components/board/Board";
 import StatusMessage from "@/app/_components/status-message/StatusMessage";
-import { columns, rows, WORDS } from "@/app/lib/constants";
-import { startGame } from "@/app/lib/actions";
-
-const wordsLength = WORDS.length;
-
-const pickRandomWord = () => {
-  return WORDS[Math.floor(Math.random() * wordsLength)];
-};
+import { COLUMNS, ROWS } from "@/app/lib/constants";
+import useGame from "./useGame";
 
 export default function App() {
-  const [answer, setAnswer] = useState(pickRandomWord);
-  const [gameId, setGameId] = useState<string | null>(null);
-  const [previousGuesses, setPreviousGuesses] = useState<string[]>([]);
   const [currentGuess, setCurrentGuess] = useState("");
   const [warning, setWarning] = useState<string | null>(null);
   const [warningId, setWarningId] = useState(0);
 
-  useEffect(() => {
-    let ignore = false;
-    const beginGame = async () => {
-      const id = await startGame();
-      if (!ignore) {
-        setGameId(id);
-      }
-    };
-
-    beginGame();
-
-    return () => {
-      ignore = true;
-    };
-  }, []);
+  const {
+    answer,
+    previousGuesses,
+    colors,
+    isReady,
+    newGame,
+    makeGuess,
+    isFetching,
+    error,
+  } = useGame();
 
   const handleReset = async () => {
     setCurrentGuess("");
-    setPreviousGuesses([]);
-    setAnswer(pickRandomWord());
-    setGameId(null);
+    await newGame();
     setWarning(null);
-
-    const id = await startGame();
-    setGameId(id);
   };
 
   const showWarning = (text: string) => {
@@ -61,18 +42,19 @@ export default function App() {
   }, [warningId]);
 
   const winner = answer === previousGuesses[previousGuesses.length - 1];
-  const gameOver = previousGuesses.length === rows || winner;
+  const gameOver = previousGuesses.length === ROWS || winner;
 
-  const handleKey = (key: string) => {
-    if (gameOver || !gameId) return;
+  const handleKey = async (key: string) => {
+    if (gameOver || !isReady || isFetching) return;
 
     if (key === "Enter") {
-      if (currentGuess.length !== columns) {
+      if (currentGuess.length !== COLUMNS) {
         showWarning("Not enough letters");
         return;
       }
-      setPreviousGuesses((prev) => [...prev, currentGuess]);
-      setCurrentGuess("");
+      const saved = await makeGuess(currentGuess);
+
+      if (saved) setCurrentGuess("");
     } else if (key === "Backspace") {
       setCurrentGuess((prev) => prev.slice(0, prev.length - 1));
     } else {
@@ -100,7 +82,7 @@ export default function App() {
       <StatusMessage
         gameOver={gameOver}
         winner={winner}
-        warning={warning}
+        warning={warning || error}
         answer={answer}
         showInstructions={previousGuesses.length === 0}
         onReset={handleReset}
@@ -108,12 +90,16 @@ export default function App() {
       <Board
         previousGuesses={previousGuesses}
         currentGuess={currentGuess}
-        answer={answer}
+        colors={colors}
         warningId={warningId}
-        warning={warning}
+        warning={warning || error}
         gameOver={gameOver}
+        isFetching={isFetching}
       />
-      <Keyboard buttonPress={handleKey} disabled={gameOver || !gameId} />
+      <Keyboard
+        buttonPress={handleKey}
+        disabled={gameOver || !isReady || isFetching}
+      />
     </div>
   );
 }

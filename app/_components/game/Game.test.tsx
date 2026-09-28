@@ -1,19 +1,32 @@
 import Game from "./Game";
-import { WORDS } from "@/app/lib/constants";
+import { submitGuess } from "@/app/lib/actions";
 
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-// fake server: startGame resolves with an id instead of hitting the database
-jest.mock("@/app/lib/actions", () => ({
-  startGame: async () => "test-game-id",
-}));
+let mockAnswer = "REACT";
+let mockGuesses: string[] = [];
 
-// makes pickRandomWord choose this word, so every test knows the answer
-const useAnswer = (word: string) => {
-  const index = WORDS.indexOf(word);
-  jest.spyOn(Math, "random").mockReturnValue((index + 0.5) / WORDS.length);
-};
+jest.mock("@/app/lib/actions", () => {
+  const { calculateWordColors } = jest.requireActual("@/app/lib/colors");
+
+  return {
+    startGame: jest.fn(async () => {
+      mockGuesses = [];
+      return "test-game-id";
+    }),
+    submitGuess: jest.fn(async (guess: string) => {
+      mockGuesses = [...mockGuesses, guess];
+      const over = guess === mockAnswer || mockGuesses.length === 6;
+
+      return {
+        previousGuesses: mockGuesses,
+        colors: mockGuesses.map((g) => calculateWordColors(mockAnswer, g)),
+        answer: over ? mockAnswer : null,
+      };
+    }),
+  };
+});
 
 const getRowLetters = (rowNumber: number) =>
   within(screen.getByRole("group", { name: `Row ${rowNumber}` }))
@@ -25,7 +38,6 @@ const getRowLabels = (rowNumber: number) =>
     .getAllByRole("img")
     .map((tile) => tile.getAttribute("aria-label"));
 
-// the keyboard is disabled until startGame has returned an id
 const waitForGameReady = () =>
   waitFor(() =>
     expect(screen.getByRole("button", { name: "T" })).toBeEnabled(),
@@ -38,7 +50,7 @@ const renderGame = async () => {
 
 describe("<Game />", () => {
   beforeEach(() => {
-    useAnswer("REACT");
+    mockAnswer = "REACT";
   });
 
   afterEach(() => {
@@ -111,7 +123,7 @@ describe("<Game />", () => {
     await user.keyboard("tow{Enter}");
 
     expect(screen.getByText("Not enough letters")).toBeInTheDocument();
-    // the short guess stays on the current row
+
     expect(getRowLetters(1)).toEqual(["T", "O", "W", "", ""]);
 
     act(() => jest.advanceTimersByTime(1500));
@@ -136,7 +148,7 @@ describe("<Game />", () => {
     expect(screen.getByRole("group", { current: true })).toHaveAccessibleName(
       "Row 2",
     );
-    // instructions only show before the first guess
+
     expect(screen.queryByText(/Guess the 5-letter word/)).toBeNull();
   });
 
@@ -173,12 +185,8 @@ describe("<Game />", () => {
 
     await user.keyboard("react{Enter}");
 
-    await waitFor(() =>
-      expect(
-        screen.getAllByRole("img", { name: "Empty" })[0],
-      ).not.toBeDisabled(),
-    );
-    useAnswer("QUEEN");
+    await screen.findByText("Brilliant!");
+    mockAnswer = "QUEEN";
 
     await user.click(screen.getByRole("button", { name: "TRY AGAIN" }));
     await waitForGameReady();
@@ -188,8 +196,33 @@ describe("<Game />", () => {
       screen.getByText("Guess the 5-letter word in 6 tries"),
     ).toBeInTheDocument();
 
-    // the new answer is used: QUEEN now wins
     await user.keyboard("queen{Enter}");
     expect(screen.getByText("Brilliant!")).toBeInTheDocument();
+  });
+
+  it("shows an error and keeps the guess when the server fails", async () => {
+    jest.mocked(submitGuess).mockRejectedValueOnce(new Error("offline"));
+    const user = userEvent.setup();
+    await renderGame();
+
+    await user.keyboard("chair{Enter}");
+
+    expect(
+      await screen.findByText("Something went wrong. Try again."),
+    ).toBeInTheDocument();
+
+    expect(getRowLetters(1)).toEqual(["C", "H", "A", "I", "R"]);
+    expect(getRowLabels(1)).toEqual(["C", "H", "A", "I", "R"]);
+
+    await user.keyboard("{Enter}");
+
+    expect(getRowLabels(1)).toEqual([
+      "C, present",
+      "H, absent",
+      "A, correct",
+      "I, absent",
+      "R, present",
+    ]);
+    expect(screen.queryByText("Something went wrong. Try again.")).toBeNull();
   });
 });

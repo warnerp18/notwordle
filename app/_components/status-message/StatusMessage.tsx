@@ -1,11 +1,11 @@
-import { columns, rows } from "@/app/lib/constants";
+import { COLUMNS, ROWS } from "@/app/lib/constants";
 import styles from "@/app/_components/status-message/StatusMessage.module.css";
 
 interface StatusMessageProps {
   gameOver: boolean;
   winner: boolean;
   warning: string | null;
-  answer: string;
+  answer: string | null;
   // true before the first guess is submitted
   showInstructions: boolean;
   onReset: () => void;
@@ -40,7 +40,7 @@ const StatusMessage = ({
           <h1 className={styles.title}>Not Wordle</h1>
           {showInstructions ? (
             <p className={styles.subtitle}>
-              Guess the {columns}-letter word in {rows} tries
+              Guess the {COLUMNS}-letter word in {ROWS} tries
             </p>
           ) : null}
         </>

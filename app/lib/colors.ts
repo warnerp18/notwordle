@@ -1,11 +1,14 @@
-const COLORS = { yellow: "yellow", green: "green", gray: "gray" };
+export type Color = "green" | "yellow" | "gray";
 
-export const calculateWordColors = (
-  answer: string,
-  guess: string,
-): string[] => {
+export const COLORS = {
+  yellow: "yellow",
+  green: "green",
+  gray: "gray",
+} as const;
+
+export const calculateWordColors = (answer: string, guess: string): Color[] => {
   if (!guess) return [];
-  const result = [];
+  const result: Color[] = [];
 
   const answerMap = new Map();
 
