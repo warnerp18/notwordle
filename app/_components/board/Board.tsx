@@ -2,6 +2,19 @@ import { calculateWordColors } from "@/app/lib/colors";
 import { rowArray, columnArray } from "@/app/lib/constants";
 import styles from "@/app/_components/board/Board.module.css";
 
+// what each tile color means, read out by screen readers
+const colorMeanings: Record<string, string> = {
+  green: "correct",
+  yellow: "present",
+  gray: "absent",
+};
+
+const getTileLabel = (letter?: string, color?: string) => {
+  if (!letter) return "Empty";
+  if (!color) return letter;
+  return `${letter}, ${colorMeanings[color]}`;
+};
+
 interface BoardProps {
   previousGuesses: string[];
   currentGuess: string;
@@ -19,9 +32,8 @@ const Board = ({
   warning,
   gameOver,
 }: BoardProps) => {
-  console.log({ answer });
   return (
-    <div className={styles.board}>
+    <div className={styles.board} role="group" aria-label="Game board">
       {rowArray.map((_row, rowIndex) => {
         const activeRow = rowIndex === previousGuesses.length;
         const rowWord = activeRow ? currentGuess : previousGuesses[rowIndex];
@@ -32,6 +44,9 @@ const Board = ({
         return (
           <div
             key={activeRow ? `${rowIndex}-${warningId}` : rowIndex}
+            role="group"
+            aria-label={`Row ${rowIndex + 1}`}
+            aria-current={activeRow && !gameOver ? "true" : undefined}
             className={`
               ${styles.row} 
               ${activeRow && warning ? styles.shake : ""}
@@ -39,9 +54,13 @@ const Board = ({
             `}>
             {columnArray.map((_column, columnIndex) => {
               const color = bgColor?.[columnIndex];
+              const letter = rowWord?.[columnIndex];
+              const label = getTileLabel(letter, color);
               return (
                 <div
                   key={columnIndex}
+                  role="img"
+                  aria-label={label}
                   className={`
                     ${styles.tile}
                   

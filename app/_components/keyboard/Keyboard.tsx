@@ -12,7 +12,11 @@ const Keyboard = ({
   disabled: boolean;
 }) => {
   return (
-    <div className={styles.keyboard} onMouseDown={(e) => e.preventDefault()}>
+    <div
+      className={styles.keyboard}
+      role="group"
+      aria-label="Keyboard"
+      onMouseDown={(e) => e.preventDefault()}>
       <div className={styles.row}>
         {TOP_CHARACTERS.split("").map((c) => {
           return (
