@@ -5,7 +5,6 @@ export const alt = "Not Wordle - guess the hidden five-letter word";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-// CSS variables don't exist here, so the theme colors are repeated
 const BG = "#121213";
 const TEXT = "#f8f8f8";
 const MUTED = "#818384";

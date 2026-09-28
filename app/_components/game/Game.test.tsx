@@ -1,8 +1,13 @@
 import Game from "./Game";
 import { WORDS } from "@/app/lib/constants";
 
-import { act, render, screen, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+
+// fake server: startGame resolves with an id instead of hitting the database
+jest.mock("@/app/lib/actions", () => ({
+  startGame: async () => "test-game-id",
+}));
 
 // makes pickRandomWord choose this word, so every test knows the answer
 const useAnswer = (word: string) => {
@@ -20,6 +25,17 @@ const getRowLabels = (rowNumber: number) =>
     .getAllByRole("img")
     .map((tile) => tile.getAttribute("aria-label"));
 
+// the keyboard is disabled until startGame has returned an id
+const waitForGameReady = () =>
+  waitFor(() =>
+    expect(screen.getByRole("button", { name: "T" })).toBeEnabled(),
+  );
+
+const renderGame = async () => {
+  render(<Game />);
+  await waitForGameReady();
+};
+
 describe("<Game />", () => {
   beforeEach(() => {
     useAnswer("REACT");
@@ -29,8 +45,8 @@ describe("<Game />", () => {
     jest.restoreAllMocks();
   });
 
-  it("shows the title and instructions before the first guess", () => {
-    render(<Game />);
+  it("shows the title and instructions before the first guess", async () => {
+    await renderGame();
 
     expect(
       screen.getByRole("heading", { name: "Not Wordle" }),
@@ -42,7 +58,7 @@ describe("<Game />", () => {
 
   it("types letters from the physical keyboard in uppercase", async () => {
     const user = userEvent.setup();
-    render(<Game />);
+    await renderGame();
 
     await user.keyboard("tow");
 
@@ -51,7 +67,7 @@ describe("<Game />", () => {
 
   it("types letters from the on-screen keyboard", async () => {
     const user = userEvent.setup();
-    render(<Game />);
+    await renderGame();
 
     await user.click(screen.getByRole("button", { name: "T" }));
     await user.click(screen.getByRole("button", { name: "O" }));
@@ -61,7 +77,7 @@ describe("<Game />", () => {
 
   it("removes the last letter on Backspace", async () => {
     const user = userEvent.setup();
-    render(<Game />);
+    await renderGame();
 
     await user.keyboard("tow{Backspace}");
 
@@ -70,7 +86,7 @@ describe("<Game />", () => {
 
   it("ignores letters after the row is full", async () => {
     const user = userEvent.setup();
-    render(<Game />);
+    await renderGame();
 
     await user.keyboard("chairs");
 
@@ -80,7 +96,7 @@ describe("<Game />", () => {
 
   it("ignores numbers and shortcuts like ctrl+r", async () => {
     const user = userEvent.setup();
-    render(<Game />);
+    await renderGame();
 
     await user.keyboard("1{Control>}r{/Control}");
 
@@ -90,7 +106,7 @@ describe("<Game />", () => {
   it("warns about a short guess and hides the warning after 1.5s", async () => {
     jest.useFakeTimers();
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    render(<Game />);
+    await renderGame();
 
     await user.keyboard("tow{Enter}");
 
@@ -106,7 +122,7 @@ describe("<Game />", () => {
 
   it("submits a full guess, colors it, and moves to the next row", async () => {
     const user = userEvent.setup();
-    render(<Game />);
+    await renderGame();
 
     await user.keyboard("chair{Enter}");
 
@@ -126,7 +142,7 @@ describe("<Game />", () => {
 
   it("shows a win message and stops input after guessing the answer", async () => {
     const user = userEvent.setup();
-    render(<Game />);
+    await renderGame();
 
     await user.keyboard("react{Enter}");
 
@@ -140,7 +156,7 @@ describe("<Game />", () => {
 
   it("shows the answer after 6 wrong guesses", async () => {
     const user = userEvent.setup();
-    render(<Game />);
+    await renderGame();
 
     for (let i = 0; i < 6; i++) {
       await user.keyboard("chair{Enter}");
@@ -153,11 +169,19 @@ describe("<Game />", () => {
 
   it("starts a new game when TRY AGAIN is clicked", async () => {
     const user = userEvent.setup();
-    render(<Game />);
+    await renderGame();
 
     await user.keyboard("react{Enter}");
+
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("img", { name: "Empty" })[0],
+      ).not.toBeDisabled(),
+    );
     useAnswer("QUEEN");
+
     await user.click(screen.getByRole("button", { name: "TRY AGAIN" }));
+    await waitForGameReady();
 
     expect(screen.getAllByRole("img", { name: "Empty" })).toHaveLength(30);
     expect(

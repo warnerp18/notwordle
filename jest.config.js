@@ -1,4 +1,4 @@
-const nextJest = require("next/jest");
+import nextJest from "next/jest.js";
 
 const createJestConfig = nextJest({ dir: "./" });
 
@@ -6,6 +6,10 @@ const createJestConfig = nextJest({ dir: "./" });
 const config = {
   testEnvironment: "jsdom",
   setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
+  // lets jest.mock() understand the "@/" import alias from tsconfig.json
+  moduleNameMapper: {
+    "^@/(.*)$": "<rootDir>/$1",
+  },
 };
 
-module.exports = createJestConfig(config);
+export default createJestConfig(config);

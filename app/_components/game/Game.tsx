@@ -4,6 +4,7 @@ import Keyboard from "@/app/_components/keyboard/Keyboard";
 import Board from "@/app/_components/board/Board";
 import StatusMessage from "@/app/_components/status-message/StatusMessage";
 import { columns, rows, WORDS } from "@/app/lib/constants";
+import { startGame } from "@/app/lib/actions";
 
 const wordsLength = WORDS.length;
 
@@ -13,17 +14,37 @@ const pickRandomWord = () => {
 
 export default function App() {
   const [answer, setAnswer] = useState(pickRandomWord);
+  const [gameId, setGameId] = useState<string | null>(null);
   const [previousGuesses, setPreviousGuesses] = useState<string[]>([]);
   const [currentGuess, setCurrentGuess] = useState("");
-
   const [warning, setWarning] = useState<string | null>(null);
   const [warningId, setWarningId] = useState(0);
 
-  const handleReset = () => {
+  useEffect(() => {
+    let ignore = false;
+    const beginGame = async () => {
+      const id = await startGame();
+      if (!ignore) {
+        setGameId(id);
+      }
+    };
+
+    beginGame();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const handleReset = async () => {
     setCurrentGuess("");
     setPreviousGuesses([]);
     setAnswer(pickRandomWord());
+    setGameId(null);
     setWarning(null);
+
+    const id = await startGame();
+    setGameId(id);
   };
 
   const showWarning = (text: string) => {
@@ -43,7 +64,7 @@ export default function App() {
   const gameOver = previousGuesses.length === rows || winner;
 
   const handleKey = (key: string) => {
-    if (gameOver) return;
+    if (gameOver || !gameId) return;
 
     if (key === "Enter") {
       if (currentGuess.length !== columns) {
@@ -92,7 +113,7 @@ export default function App() {
         warning={warning}
         gameOver={gameOver}
       />
-      <Keyboard buttonPress={handleKey} disabled={gameOver} />
+      <Keyboard buttonPress={handleKey} disabled={gameOver || !gameId} />
     </div>
   );
 }
