@@ -1,4 +1,4 @@
-import { startGame, submitGuess } from "@/app/lib/actions";
+import { getGame, startGame, submitGuess } from "@/app/lib/actions";
 import { Color } from "@/app/lib/colors";
 import { useEffect, useState } from "react";
 
@@ -12,6 +12,7 @@ const gameInitialValue = {
   previousGuesses: [],
   colors: [],
 };
+const STORAGE_KEY = "gameId";
 
 const useGame = () => {
   const [gameId, setGameId] = useState<string | null>(null);
@@ -19,7 +20,31 @@ const useGame = () => {
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const getIdFromLocalStorage = () => {
+    try {
+      return localStorage.getItem(STORAGE_KEY);
+    } catch {
+      return null;
+    }
+  };
+  const deleteIdFromLocalStorage = () => {
+    try {
+      if (gameId) localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // storage blocked: game still works, just can't resume
+    }
+  };
+
+  const setIdInLocalStorage = (id: string) => {
+    try {
+      localStorage.setItem(STORAGE_KEY, id);
+    } catch {
+      return null;
+    }
+  };
+
   const newGame = async () => {
+    deleteIdFromLocalStorage();
     setIsFetching(true);
     setGameId(null);
     setError(null);
@@ -29,6 +54,7 @@ const useGame = () => {
       const id = await startGame();
 
       setGameId(id);
+      setIdInLocalStorage(id);
     } catch {
       setError("Something went wrong. Try again.");
     } finally {
@@ -59,11 +85,27 @@ const useGame = () => {
   // first load: no isFetching needed, isReady stays false until the id arrives
   useEffect(() => {
     let ignore = false;
+
     const beginGame = async () => {
       try {
+        const savedId = getIdFromLocalStorage();
+
+        if (savedId) {
+          const saved = await getGame(savedId);
+
+          if (ignore) return;
+
+          if (saved) {
+            setGameId(savedId);
+            setGame(saved);
+            return;
+          }
+        }
+
         const id = await startGame();
         if (!ignore) {
           setGameId(id);
+          setIdInLocalStorage(id);
         }
       } catch {
         setError("Something went wrong. Try again.");

@@ -10,20 +10,25 @@ let mockGuesses: string[] = [];
 jest.mock("@/app/lib/actions", () => {
   const { calculateWordColors } = jest.requireActual("@/app/lib/colors");
 
+  const mockState = () => ({
+    previousGuesses: mockGuesses,
+    colors: mockGuesses.map((g: string) => calculateWordColors(mockAnswer, g)),
+    answer:
+      mockGuesses.includes(mockAnswer) || mockGuesses.length === 6
+        ? mockAnswer
+        : null,
+  });
+
   return {
+    // nothing to resume unless this fake game has guesses
+    getGame: jest.fn(async () => (mockGuesses.length ? mockState() : null)),
     startGame: jest.fn(async () => {
       mockGuesses = [];
       return "test-game-id";
     }),
     submitGuess: jest.fn(async (guess: string) => {
       mockGuesses = [...mockGuesses, guess];
-      const over = guess === mockAnswer || mockGuesses.length === 6;
-
-      return {
-        previousGuesses: mockGuesses,
-        colors: mockGuesses.map((g) => calculateWordColors(mockAnswer, g)),
-        answer: over ? mockAnswer : null,
-      };
+      return mockState();
     }),
   };
 });
@@ -51,6 +56,8 @@ const renderGame = async () => {
 describe("<Game />", () => {
   beforeEach(() => {
     mockAnswer = "REACT";
+    mockGuesses = [];
+    localStorage.clear();
   });
 
   afterEach(() => {
@@ -224,5 +231,29 @@ describe("<Game />", () => {
       "R, present",
     ]);
     expect(screen.queryByText("Something went wrong. Try again.")).toBeNull();
+  });
+
+  it("brings back the board after a refresh", async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(<Game />);
+    await waitForGameReady();
+
+    await user.keyboard("chair{Enter}");
+    await waitFor(() => expect(getRowLabels(1)[0]).toBe("C, present"));
+
+    // a refresh: the page goes away and loads again
+    unmount();
+    await renderGame();
+
+    expect(getRowLabels(1)).toEqual([
+      "C, present",
+      "H, absent",
+      "A, correct",
+      "I, absent",
+      "R, present",
+    ]);
+    expect(screen.getByRole("group", { current: true })).toHaveAccessibleName(
+      "Row 2",
+    );
   });
 });
