@@ -68,8 +68,13 @@ const useGame = () => {
       setIsFetching(true);
       try {
         const gameResults = await submitGuess(guess, gameId);
+        if ("error" in gameResults) {
+          setError(gameResults.error);
+          return false;
+        }
 
         setGame(gameResults);
+
         return true;
       } catch {
         setError("Something went wrong. Try again.");

@@ -233,6 +233,22 @@ describe("<Game />", () => {
     expect(screen.queryByText("Something went wrong. Try again.")).toBeNull();
   });
 
+  it("warns about a word that isn't in the list and keeps the row", async () => {
+    jest
+      .mocked(submitGuess)
+      .mockResolvedValueOnce({ error: "Not in word list" });
+    const user = userEvent.setup();
+    await renderGame();
+
+    await user.keyboard("testi{Enter}");
+
+    expect(await screen.findByText("Not in word list")).toBeInTheDocument();
+    expect(getRowLetters(1)).toEqual(["T", "E", "S", "T", "I"]);
+    expect(screen.getByRole("group", { current: true })).toHaveAccessibleName(
+      "Row 1",
+    );
+  });
+
   it("brings back the board after a refresh", async () => {
     const user = userEvent.setup();
     const { unmount } = render(<Game />);

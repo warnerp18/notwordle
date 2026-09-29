@@ -1,0 +1,60 @@
+/**
+ * @jest-environment node
+ */
+import { submitGuess } from "./actions";
+import { sql } from "./db";
+
+// server-only throws outside a server build, so switch it off for tests
+jest.mock("server-only", () => ({}));
+
+// no real database: each test says what the queries return
+jest.mock("./db", () => ({ sql: jest.fn() }));
+
+const mockSql = jest.mocked(sql);
+
+const GAME_ID = "3f2b8c1e-4d5a-4b6c-8d7e-9f0a1b2c3d4e";
+
+// SELECT returns the game, then UPDATE returns the new guesses
+const mockGameWithNewGuess = (guess: string) => {
+  mockSql
+    .mockResolvedValueOnce([{ id: GAME_ID, answer: "REACT", guesses: [] }])
+    .mockResolvedValueOnce([{ guesses: [guess] }]);
+};
+
+describe("submitGuess", () => {
+  beforeEach(() => {
+    jest.resetAllMocks();
+  });
+
+  it("returns an error for a word that isn't in the list, without touching the database", async () => {
+    const result = await submitGuess("TESTI", GAME_ID);
+
+    expect(result).toEqual({ error: "Not in word list" });
+    expect(mockSql).not.toHaveBeenCalled();
+  });
+
+  it("accepts an answer word, ignoring case", async () => {
+    mockGameWithNewGuess("CHAIR");
+
+    const result = await submitGuess("chair", GAME_ID);
+
+    expect(result).toEqual({
+      previousGuesses: ["CHAIR"],
+      colors: [["yellow", "gray", "green", "gray", "yellow"]],
+      answer: null,
+    });
+  });
+
+  it("accepts a word that can be guessed but is never an answer", async () => {
+    mockGameWithNewGuess("AAHED");
+
+    const result = await submitGuess("AAHED", GAME_ID);
+
+    expect(result).not.toHaveProperty("error");
+    expect(mockSql).toHaveBeenCalledTimes(2);
+  });
+
+  it("still throws for a guess that isn't 5 letters", async () => {
+    await expect(submitGuess("AB1", GAME_ID)).rejects.toThrow();
+  });
+});

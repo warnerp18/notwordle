@@ -13,8 +13,11 @@ const mockGetGame = jest.mocked(getGame);
 const mockStartGame = jest.mocked(startGame);
 const mockSubmitGuess = jest.mocked(submitGuess);
 
-// whatever the real submitGuess resolves with
-type GameState = Awaited<ReturnType<typeof submitGuess>>;
+// the game-state half of what submitGuess resolves with (the other half is { error })
+type GameState = Exclude<
+  Awaited<ReturnType<typeof submitGuess>>,
+  { error: string }
+>;
 
 const chairResult: GameState = {
   previousGuesses: ["CHAIR"],
@@ -135,6 +138,27 @@ describe("useGame", () => {
 
     expect(saved).toBe(false);
     expect(result.current.error).toBe("Something went wrong. Try again.");
+    expect(result.current.previousGuesses).toEqual(["CHAIR"]);
+    expect(result.current.isFetching).toBe(false);
+  });
+
+  it("returns false, keeps the game, and shows the server's message for a rejected word", async () => {
+    mockSubmitGuess
+      .mockResolvedValueOnce(chairResult)
+      .mockResolvedValueOnce({ error: "Not in word list" });
+    const { result } = await renderReadyGame();
+
+    await act(async () => {
+      await result.current.makeGuess("CHAIR");
+    });
+
+    let saved: boolean | undefined;
+    await act(async () => {
+      saved = await result.current.makeGuess("TESTI");
+    });
+
+    expect(saved).toBe(false);
+    expect(result.current.error).toBe("Not in word list");
     expect(result.current.previousGuesses).toEqual(["CHAIR"]);
     expect(result.current.isFetching).toBe(false);
   });

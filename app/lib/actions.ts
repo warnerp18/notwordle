@@ -3,14 +3,17 @@
 import { calculateWordColors } from "./colors";
 import { ROWS } from "./constants";
 import { sql } from "./db";
-import { WORDS } from "./words";
+import { ANSWER_WORDS } from "./answerWords";
+import { ALLOWED_WORDS } from "./allowedWords";
 
 const pickRandomWord = () => {
-  return WORDS[Math.floor(Math.random() * WORDS.length)];
+  return ANSWER_WORDS[Math.floor(Math.random() * ANSWER_WORDS.length)];
 };
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const allowedWordSet = new Set(ALLOWED_WORDS);
 
 // unknown: callers can send anything, not just strings
 const isValidId = (id: unknown) =>
@@ -46,6 +49,10 @@ export const submitGuess = async (guess: string, id: string) => {
 
   if (!/^[A-Z]{5}$/.test(uppercaseGuess)) {
     throw new Error("Invalid guess. Guess should only contain characters a-z");
+  }
+
+  if (!allowedWordSet.has(uppercaseGuess)) {
+    return { error: "Not in word list" };
   }
 
   const [game] = await sql`SELECT * FROM games WHERE id = ${id}`;
