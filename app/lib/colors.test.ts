@@ -1,4 +1,4 @@
-import { calculateWordColors } from "./colors";
+import { calculateWordColors, Color, getKeyColors } from "./colors";
 
 describe("calculateWordColors", () => {
   it("returns an empty array when the guess is empty", () => {
@@ -65,5 +65,40 @@ describe("calculateWordColors", () => {
       "yellow",
       "gray",
     ]);
+  });
+});
+
+describe("getKeyColors", () => {
+  it("returns no colors before any guesses", () => {
+    expect(getKeyColors([], [])).toEqual({});
+  });
+
+  it("keeps the best color each letter has had: green, then yellow, then gray", () => {
+    // answer is REACT
+    const guesses = ["CHAIR", "EERIE", "TRACE"];
+    const colors: Color[][] = [
+      ["yellow", "gray", "green", "gray", "yellow"], // C H A I R
+      ["gray", "green", "yellow", "gray", "gray"], // E E R I E
+      ["yellow", "yellow", "green", "green", "yellow"], // T R A C E
+    ];
+
+    expect(getKeyColors(guesses, colors)).toEqual({
+      C: "green", // yellow, then green
+      H: "gray",
+      A: "green",
+      I: "gray",
+      R: "yellow",
+      E: "green", // gray, green, gray, then yellow
+      T: "yellow",
+    });
+  });
+
+  it("never downgrades a letter that was already green", () => {
+    const colors: Color[][] = [
+      ["green", "gray", "gray", "gray", "gray"],
+      ["yellow", "gray", "gray", "gray", "gray"],
+    ];
+
+    expect(getKeyColors(["ABCDE", "AFGHI"], colors).A).toBe("green");
   });
 });

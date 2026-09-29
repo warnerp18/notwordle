@@ -5,6 +5,7 @@ import Board from "@/app/_components/board/Board";
 import StatusMessage from "@/app/_components/status-message/StatusMessage";
 import { COLUMNS, ROWS } from "@/app/lib/constants";
 import useGame from "./useGame";
+import { getKeyColors } from "@/app/lib/colors";
 
 export default function App() {
   const [currentGuess, setCurrentGuess] = useState("");
@@ -77,6 +78,8 @@ export default function App() {
     return () => window.removeEventListener("keydown", handleKeyBoardDown);
   }, []);
 
+  const keyColors = getKeyColors(previousGuesses, colors);
+
   return (
     <div className="mx-auto flex h-dvh w-full max-w-(--app-max-width) flex-col justify-between px-2 py-[25px] min-[520px]:justify-start">
       <StatusMessage
@@ -98,6 +101,7 @@ export default function App() {
       />
       <Keyboard
         buttonPress={handleKey}
+        keyColors={keyColors}
         disabled={gameOver || !isReady || isFetching}
       />
     </div>

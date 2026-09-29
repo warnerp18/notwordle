@@ -1,4 +1,5 @@
 import styles from "@/app/_components/keyboard/Keyboard.module.css";
+import { Color } from "@/app/lib/colors";
 const TOP_CHARACTERS = "QWERTYUIOP";
 const MIDDLE_CHARACTERS = "ASDFGHJKL";
 const BOTTOM_CHARACTERS = "ZXCVBNM";
@@ -7,9 +8,11 @@ const ENTER = "ENTER";
 const Keyboard = ({
   buttonPress,
   disabled,
+  keyColors,
 }: {
   buttonPress: (key: string) => void;
   disabled: boolean;
+  keyColors: Record<string, Color>;
 }) => {
   return (
     <div
@@ -19,10 +22,11 @@ const Keyboard = ({
       onMouseDown={(e) => e.preventDefault()}>
       <div className={styles.row}>
         {TOP_CHARACTERS.split("").map((c) => {
+          const colorClass = keyColors[c];
           return (
             <button
               key={c}
-              className={styles.key}
+              className={`${styles.key} ${colorClass ? styles[colorClass] : ""}`}
               disabled={disabled}
               onClick={() => {
                 buttonPress(c);
@@ -36,10 +40,11 @@ const Keyboard = ({
       <div className={styles.row}>
         <div className={styles.spacer}></div>
         {MIDDLE_CHARACTERS.split("").map((c) => {
+          const colorClass = keyColors[c];
           return (
             <button
               key={c}
-              className={styles.key}
+              className={`${styles.key} ${colorClass ? styles[colorClass] : ""}`}
               disabled={disabled}
               onClick={() => {
                 buttonPress(c);
@@ -60,10 +65,12 @@ const Keyboard = ({
           {ENTER}
         </button>
         {BOTTOM_CHARACTERS.split("").map((c) => {
+          const colorClass = keyColors[c];
+
           return (
             <button
               key={c}
-              className={styles.key}
+              className={`${styles.key} ${colorClass ? styles[colorClass] : ""}`}
               disabled={disabled}
               onClick={() => {
                 buttonPress(c);

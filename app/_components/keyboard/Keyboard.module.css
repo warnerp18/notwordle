@@ -38,6 +38,19 @@
   cursor: not-allowed;
 }
 
+/* best color each letter has had so far, same colors as the board tiles */
+.green {
+  background-color: var(--color-correct);
+}
+
+.yellow {
+  background-color: var(--color-present);
+}
+
+.gray {
+  background-color: var(--color-absent);
+}
+
 /* Enter and Backspace are 1.5 keys wide */
 .special {
   flex: 1.5;

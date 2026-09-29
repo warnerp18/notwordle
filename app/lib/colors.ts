@@ -53,3 +53,23 @@ export const calculateWordColors = (answer: string, guess: string): Color[] => {
 
   return result;
 };
+
+const RANK: Record<Color, number> = { gray: 0, yellow: 1, green: 2 };
+
+export const getKeyColors = (guesses: string[], colors: Color[][]) => {
+  const result: Record<string, Color> = {};
+
+  for (let wordI = 0; wordI < guesses.length; wordI++) {
+    const word = guesses[wordI];
+    for (let letterI = 0; letterI < word.length; letterI++) {
+      const letter = word[letterI];
+      const color = colors[wordI][letterI];
+      const current = result[letter];
+
+      if (!current || RANK[color] > RANK[current]) {
+        result[letter] = color;
+      }
+    }
+  }
+  return result;
+};
