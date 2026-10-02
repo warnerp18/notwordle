@@ -42,7 +42,6 @@ export async function startGame() {
 
 export const submitGuess = async (guess: string, id: string) => {
   const uppercaseGuess = typeof guess === "string" ? guess.toUpperCase() : "";
-
   if (!isValidId(id)) {
     throw new Error("Must provide a valid game id");
   }
@@ -66,8 +65,18 @@ export const submitGuess = async (guess: string, id: string) => {
     return toGameState(game.guesses, game.answer);
   }
 
-  const [updatedGame] =
-    await sql`UPDATE games SET guesses = array_append(guesses, ${uppercaseGuess}) WHERE id = ${game.id} RETURNING guesses`;
+  const [updatedGame] = await sql`
+      UPDATE games
+      SET guesses = array_append(guesses, ${uppercaseGuess})
+      WHERE id = ${game.id}
+        AND COALESCE(array_length(guesses, 1), 0) < ${ROWS}
+        AND NOT(answer = ANY(guesses))
+      RETURNING guesses `;
+
+  if (!updatedGame) {
+    const [latestGame] = await sql`SELECT * FROM games WHERE id = ${id}`;
+    return toGameState(latestGame.guesses, latestGame.answer);
+  }
 
   return toGameState(updatedGame.guesses, game.answer);
 };
