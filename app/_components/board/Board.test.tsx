@@ -18,6 +18,7 @@ describe("<Board />", () => {
         warning={null}
         isFetching={false}
         gameOver={false}
+        showLoading={false}
       />,
     );
 
@@ -39,6 +40,7 @@ describe("<Board />", () => {
         warning={null}
         isFetching={false}
         gameOver={false}
+        showLoading={false}
       />,
     );
     const row1 = screen.getByRole("group", { name: "Row 1" });
@@ -72,6 +74,7 @@ describe("<Board />", () => {
         warning={null}
         isFetching={false}
         gameOver={false}
+        showLoading={false}
       />,
     );
     const row1 = screen.getByRole("group", { name: "Row 1" });
@@ -98,6 +101,7 @@ describe("<Board />", () => {
         warning={null}
         isFetching={false}
         gameOver={false}
+        showLoading={false}
       />,
     );
 
@@ -116,6 +120,7 @@ describe("<Board />", () => {
         warning={null}
         isFetching={false}
         gameOver={true}
+        showLoading={false}
       />,
     );
 
@@ -132,6 +137,7 @@ describe("<Board />", () => {
         warning={null}
         isFetching={false}
         gameOver={true}
+        showLoading={false}
       />,
     );
     const row1 = screen.getByRole("group", { name: "Row 1" });
@@ -159,6 +165,7 @@ describe("<Board />", () => {
         warning={null}
         isFetching={false}
         gameOver={true}
+        showLoading={false}
       />,
     );
 
@@ -187,6 +194,7 @@ describe("<Board />", () => {
         warning={null}
         isFetching={true}
         gameOver={false}
+        showLoading={false}
       />,
     );
 
@@ -194,5 +202,35 @@ describe("<Board />", () => {
       "aria-busy",
       "true",
     );
+  });
+
+  // the wave comes from each tile in the row starting its animation a bit later
+  it("staggers the tiles in the row being checked while loading shows", () => {
+    render(
+      <Board
+        previousGuesses={["CHAIR"]}
+        currentGuess={"CRANE"}
+        colors={colorsFor("REACT", ["CHAIR"])}
+        warningId={0}
+        warning={null}
+        isFetching={true}
+        gameOver={false}
+        showLoading={true}
+      />,
+    );
+
+    const activeTiles = within(
+      screen.getByRole("group", { name: "Row 2" }),
+    ).getAllByRole("img");
+    const delays = activeTiles.map((tile) => tile.style.animationDelay);
+
+    expect(new Set(delays).size).toBe(5);
+
+    const pastTiles = within(
+      screen.getByRole("group", { name: "Row 1" }),
+    ).getAllByRole("img");
+    for (const tile of pastTiles) {
+      expect(tile.style.animationDelay).toBe("");
+    }
   });
 });

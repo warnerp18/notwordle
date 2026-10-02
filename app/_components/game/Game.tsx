@@ -6,6 +6,7 @@ import StatusMessage from "@/app/_components/status-message/StatusMessage";
 import { COLUMNS, ROWS } from "@/app/lib/constants";
 import useGame from "./useGame";
 import { getKeyColors } from "@/app/lib/colors";
+import useDelayedLoading from "@/app/_hooks/useDelayedLoading";
 
 export default function App() {
   const [currentGuess, setCurrentGuess] = useState("");
@@ -22,6 +23,8 @@ export default function App() {
     isFetching,
     error,
   } = useGame();
+
+  const { showLoading } = useDelayedLoading(isFetching);
 
   const handleReset = async () => {
     setCurrentGuess("");
@@ -98,6 +101,7 @@ export default function App() {
         warning={warning || error}
         gameOver={gameOver}
         isFetching={isFetching}
+        showLoading={showLoading}
       />
       <Keyboard
         buttonPress={handleKey}

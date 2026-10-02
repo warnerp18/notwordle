@@ -23,6 +23,7 @@ interface BoardProps {
   gameOver: boolean;
   isFetching: boolean;
   colors: Color[][];
+  showLoading: boolean;
 }
 
 const Board = ({
@@ -33,6 +34,7 @@ const Board = ({
   warning,
   gameOver,
   colors,
+  showLoading,
 }: BoardProps) => {
   return (
     <div
@@ -42,6 +44,7 @@ const Board = ({
       aria-busy={isFetching}>
       {ROW_ARRAY.map((_row, rowIndex) => {
         const activeRow = rowIndex === previousGuesses.length;
+        const wave = activeRow && showLoading;
         const rowWord = activeRow ? currentGuess : previousGuesses[rowIndex];
         const pastRow = rowIndex < previousGuesses.length;
 
@@ -67,9 +70,16 @@ const Board = ({
                   key={columnIndex}
                   role="img"
                   aria-label={label}
+                  style={
+                    wave
+                      ? {
+                          animationDelay: `${columnIndex * 0.15}s`,
+                        }
+                      : {}
+                  }
                   className={`
                     ${styles.tile}
-                  
+                    ${wave ? styles.wave : ""}
                     ${activeRow && rowWord?.[columnIndex] ? styles.filled : ""}
                     ${color ? styles[color] : ""}
                     `}>

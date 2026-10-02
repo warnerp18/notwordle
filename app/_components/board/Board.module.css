@@ -57,6 +57,10 @@
   animation: shake 0.4s;
 }
 
+.wave {
+  animation: wave-bounce 1.3s ease-in-out infinite;
+}
+
 @keyframes shake {
   0%,
   100% {
@@ -82,9 +86,35 @@
   }
 }
 
+@keyframes wave-bounce {
+  0%,
+  30%,
+  100% {
+    transform: translateY(0);
+  }
+  15% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes wave-fade {
+  0%,
+  30%,
+  100% {
+    opacity: 1;
+  }
+  15% {
+    opacity: 0.4;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .filled,
   .shake {
     animation: none;
+  }
+
+  .wave {
+    animation: wave-fade 1.3s ease-in-out infinite;
   }
 }
