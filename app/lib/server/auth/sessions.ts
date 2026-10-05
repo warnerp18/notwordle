@@ -1,5 +1,5 @@
 import "server-only";
-import { sql } from "../db";
+import { sql } from "@/app/lib/server/db";
 import { cookies } from "next/headers";
 
 export const SESSION_LENGTH_DAYS = 7;

@@ -1,12 +1,12 @@
 import { cookies } from "next/headers";
 import { createSession, setSessionCookie, SESSION_LENGTH_MS } from "./sessions";
-import { sql } from "../db";
+import { sql } from "@/app/lib/server/db";
 
 // server-only throws outside a server build, so switch it off for tests
 jest.mock("server-only", () => ({}));
 
 // no real database: each test says what the query returns
-jest.mock("../db", () => ({ sql: jest.fn() }));
+jest.mock("@/app/lib/server/db", () => ({ sql: jest.fn() }));
 
 // cookies() only works inside a real Next.js request, so swap in a fake
 // cookie store whose set() just records what it was called with
