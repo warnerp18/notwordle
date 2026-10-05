@@ -1,5 +1,5 @@
 import Game from "./Game";
-import { submitGuess } from "@/app/lib/actions";
+import { submitGuess } from "@/app/lib/server/actions";
 
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -7,7 +7,7 @@ import userEvent from "@testing-library/user-event";
 let mockAnswer = "REACT";
 let mockGuesses: string[] = [];
 
-jest.mock("@/app/lib/actions", () => {
+jest.mock("@/app/lib/server/actions", () => {
   const { calculateWordColors } = jest.requireActual("@/app/lib/colors");
 
   const mockState = () => ({

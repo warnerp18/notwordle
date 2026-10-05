@@ -1,9 +1,9 @@
 import useGame from "./useGame";
-import { getGame, startGame, submitGuess } from "@/app/lib/actions";
+import { getGame, startGame, submitGuess } from "@/app/lib/server/actions";
 
 import { act, renderHook, waitFor } from "@testing-library/react";
 
-jest.mock("@/app/lib/actions", () => ({
+jest.mock("@/app/lib/server/actions", () => ({
   getGame: jest.fn(),
   startGame: jest.fn(),
   submitGuess: jest.fn(),
