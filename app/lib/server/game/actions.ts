@@ -1,35 +1,16 @@
 'use server';
 
-import { calculateWordColors } from '@/app/lib/colors';
 import { ROWS } from '@/app/lib/constants';
 import { sql } from '@/app/lib/server/db';
-import { ANSWER_WORDS } from './answerWords';
+import {
+  isGameOver,
+  isValidId,
+  pickRandomWord,
+  toGameState,
+} from '@/app/lib/server/game/games';
 import { ALLOWED_WORDS } from './allowedWords';
 
-const pickRandomWord = () => {
-  return ANSWER_WORDS[Math.floor(Math.random() * ANSWER_WORDS.length)];
-};
-
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 const allowedWordSet = new Set(ALLOWED_WORDS);
-
-// unknown: callers can send anything, not just strings
-const isValidId = (id: unknown) =>
-  typeof id === 'string' && UUID_PATTERN.test(id);
-
-const isGameOver = (guesses: string[], answer: string) => {
-  const winner = guesses[guesses.length - 1] === answer;
-
-  return guesses.length === ROWS || winner;
-};
-
-const toGameState = (guesses: string[], answer: string) => ({
-  previousGuesses: guesses,
-  colors: guesses.map((guess) => calculateWordColors(answer, guess)),
-  answer: isGameOver(guesses, answer) ? answer : null,
-});
 
 export async function startGame() {
   const answer = pickRandomWord();
