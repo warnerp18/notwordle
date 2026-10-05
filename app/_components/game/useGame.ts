@@ -1,6 +1,6 @@
-import { getGame, startGame, submitGuess } from "@/app/lib/server/game/actions";
-import { Color } from "@/app/lib/colors";
-import { useEffect, useState } from "react";
+import { getGame, startGame, submitGuess } from '@/app/lib/server/game/actions';
+import { Color } from '@/app/lib/colors';
+import { useEffect, useState } from 'react';
 
 interface GameShape {
   answer: string | null;
@@ -12,7 +12,7 @@ const gameInitialValue = {
   previousGuesses: [],
   colors: [],
 };
-const STORAGE_KEY = "gameId";
+const STORAGE_KEY = 'gameId';
 
 const useGame = () => {
   const [gameId, setGameId] = useState<string | null>(null);
@@ -56,7 +56,7 @@ const useGame = () => {
       setGameId(id);
       setIdInLocalStorage(id);
     } catch {
-      setError("Something went wrong. Try again.");
+      setError('Something went wrong. Try again.');
     } finally {
       setIsFetching(false);
     }
@@ -68,7 +68,7 @@ const useGame = () => {
       setIsFetching(true);
       try {
         const gameResults = await submitGuess(guess, gameId);
-        if ("error" in gameResults) {
+        if ('error' in gameResults) {
           setError(gameResults.error);
           return false;
         }
@@ -77,7 +77,7 @@ const useGame = () => {
 
         return true;
       } catch {
-        setError("Something went wrong. Try again.");
+        setError('Something went wrong. Try again.');
         return false;
       } finally {
         setIsFetching(false);
@@ -113,7 +113,7 @@ const useGame = () => {
           setIdInLocalStorage(id);
         }
       } catch {
-        setError("Something went wrong. Try again.");
+        setError('Something went wrong. Try again.');
       }
     };
 

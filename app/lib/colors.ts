@@ -1,9 +1,9 @@
-export type Color = "green" | "yellow" | "gray";
+export type Color = 'green' | 'yellow' | 'gray';
 
 export const COLORS = {
-  yellow: "yellow",
-  green: "green",
-  gray: "gray",
+  yellow: 'yellow',
+  green: 'green',
+  gray: 'gray',
 } as const;
 
 export const calculateWordColors = (answer: string, guess: string): Color[] => {

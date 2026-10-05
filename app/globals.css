@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /*
   Colors + font live in @theme so they work both ways:
@@ -21,7 +21,7 @@
 
   --color-key: #818384;
 
-  --font-sans: "Clear Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-sans: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* sizes shared across components */

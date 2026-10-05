@@ -1,5 +1,5 @@
-import { COLUMNS, ROWS } from "@/app/lib/constants";
-import styles from "@/app/_components/status-message/StatusMessage.module.css";
+import { COLUMNS, ROWS } from '@/app/lib/constants';
+import styles from '@/app/_components/status-message/StatusMessage.module.css';
 
 interface StatusMessageProps {
   gameOver: boolean;

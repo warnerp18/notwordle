@@ -1,6 +1,6 @@
-import "server-only";
-import { sql } from "@/app/lib/server/db";
-import { cookies } from "next/headers";
+import 'server-only';
+import { sql } from '@/app/lib/server/db';
+import { cookies } from 'next/headers';
 
 export const SESSION_LENGTH_DAYS = 7;
 export const SESSION_LENGTH_MS = SESSION_LENGTH_DAYS * 24 * 60 * 60 * 1000;
@@ -17,10 +17,10 @@ export const createSession = async (userId: string) => {
 export const setSessionCookie = async (sessionId: string) => {
   const cookieStore = await cookies();
 
-  cookieStore.set("session", sessionId, {
+  cookieStore.set('session', sessionId, {
     httpOnly: true,
     secure: true,
-    sameSite: "lax",
+    sameSite: 'lax',
     maxAge: SESSION_LENGTH_MS / 1000,
   });
 };

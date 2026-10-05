@@ -1,6 +1,6 @@
-import "server-only";
-import { BinaryLike, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
-import { promisify } from "node:util";
+import 'server-only';
+import { BinaryLike, randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
+import { promisify } from 'node:util';
 
 // scrypt is old-school Node: it takes a callback instead of returning a promise.
 // promisify wraps it so I can just `await` it.
@@ -29,13 +29,13 @@ export const hashPassword = async (password: string) => {
   // Both are raw bytes, and the database column is text. Hex writes each byte as
   // 2 characters, and it can always be turned back into the exact same bytes.
   // The default .toString() garbles random bytes, so never use that here.
-  const hash = hashedPassword.toString("hex");
+  const hash = hashedPassword.toString('hex');
 
   // The salt gets stored next to the hash because I need the same salt again
   // at login to check the password.
   // Heads up for verifyPassword: I hashed with the salt as BYTES, so at login
   // turn the stored hex back into bytes first: Buffer.from(salt, "hex").
-  return `${salt.toString("hex")}:${hash}`;
+  return `${salt.toString('hex')}:${hash}`;
 };
 
 // At login: does the password they typed match the "salt:hash" I stored?
@@ -51,14 +51,14 @@ export const verifyPassword = async (
   storedPassword: string,
 ) => {
   // Split "salt:hash" back into its two halves
-  const [saltHex, hashHex] = storedPassword.split(":");
+  const [saltHex, hashHex] = storedPassword.split(':');
 
   // Both halves are hex text in the database. Turn them back into the raw
   // bytes they started as. The salt has to be bytes because that's what
   // hashPassword used; a different salt would give a different hash.
-  const saltBytes = Buffer.from(saltHex, "hex");
+  const saltBytes = Buffer.from(saltHex, 'hex');
   // storedPasswordHash = the hash saved at sign up
-  const storedPasswordHash = Buffer.from(hashHex, "hex");
+  const storedPasswordHash = Buffer.from(hashHex, 'hex');
 
   // attemptPasswordHash = the hash of what they just typed
   const attemptPasswordHash = await scryptAsync(password, saltBytes, 32);

@@ -1,6 +1,6 @@
-import { act, renderHook } from "@testing-library/react";
-import useDelayedLoading from "./useDelayedLoading";
-import { SHOW_DELAY, MIN_VISIBLE } from "@/app/lib/constants";
+import { act, renderHook } from '@testing-library/react';
+import useDelayedLoading from './useDelayedLoading';
+import { SHOW_DELAY, MIN_VISIBLE } from '@/app/lib/constants';
 
 // fake timers: tests move the clock forward instead of waiting
 const advance = (ms: number) => {
@@ -14,7 +14,7 @@ const renderLoading = () =>
     initialProps: { isFetching: false },
   });
 
-describe("useDelayedLoading", () => {
+describe('useDelayedLoading', () => {
   beforeEach(() => {
     jest.useFakeTimers();
   });
@@ -23,13 +23,13 @@ describe("useDelayedLoading", () => {
     jest.useRealTimers();
   });
 
-  it("starts hidden", () => {
+  it('starts hidden', () => {
     const { result } = renderLoading();
 
     expect(result.current.showLoading).toBe(false);
   });
 
-  it("never shows for a request that finishes before the delay", () => {
+  it('never shows for a request that finishes before the delay', () => {
     const { result, rerender } = renderLoading();
 
     rerender({ isFetching: true });
@@ -40,7 +40,7 @@ describe("useDelayedLoading", () => {
     expect(result.current.showLoading).toBe(false);
   });
 
-  it("shows once the delay has passed", () => {
+  it('shows once the delay has passed', () => {
     const { result, rerender } = renderLoading();
 
     rerender({ isFetching: true });
@@ -51,7 +51,7 @@ describe("useDelayedLoading", () => {
     expect(result.current.showLoading).toBe(true);
   });
 
-  it("stays visible for the minimum time when the request finishes soon after showing", () => {
+  it('stays visible for the minimum time when the request finishes soon after showing', () => {
     const { result, rerender } = renderLoading();
 
     rerender({ isFetching: true });
@@ -66,7 +66,7 @@ describe("useDelayedLoading", () => {
     expect(result.current.showLoading).toBe(false);
   });
 
-  it("hides straight away when it has already been visible long enough", () => {
+  it('hides straight away when it has already been visible long enough', () => {
     const { result, rerender } = renderLoading();
 
     rerender({ isFetching: true });
@@ -77,7 +77,7 @@ describe("useDelayedLoading", () => {
     expect(result.current.showLoading).toBe(false);
   });
 
-  it("stays on without flickering when a new request starts during the minimum time", () => {
+  it('stays on without flickering when a new request starts during the minimum time', () => {
     const { result, rerender } = renderLoading();
 
     rerender({ isFetching: true });
@@ -91,7 +91,7 @@ describe("useDelayedLoading", () => {
     expect(result.current.showLoading).toBe(true);
   });
 
-  it("cancels its timers when unmounted", () => {
+  it('cancels its timers when unmounted', () => {
     const { rerender, unmount } = renderLoading();
 
     rerender({ isFetching: true });

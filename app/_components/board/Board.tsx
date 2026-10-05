@@ -1,16 +1,16 @@
-import { Color } from "@/app/lib/colors";
-import { ROW_ARRAY, COLUMN_ARRAY } from "@/app/lib/constants";
-import styles from "@/app/_components/board/Board.module.css";
+import { Color } from '@/app/lib/colors';
+import { ROW_ARRAY, COLUMN_ARRAY } from '@/app/lib/constants';
+import styles from '@/app/_components/board/Board.module.css';
 
 // what each tile color means, read out by screen readers
 const colorMeanings: Record<Color, string> = {
-  green: "correct",
-  yellow: "present",
-  gray: "absent",
+  green: 'correct',
+  yellow: 'present',
+  gray: 'absent',
 };
 
 const getTileLabel = (letter?: string, color?: Color) => {
-  if (!letter) return "Empty";
+  if (!letter) return 'Empty';
   if (!color) return letter;
   return `${letter}, ${colorMeanings[color]}`;
 };
@@ -55,11 +55,11 @@ const Board = ({
             key={activeRow ? `${rowIndex}-${warningId}` : rowIndex}
             role="group"
             aria-label={`Row ${rowIndex + 1}`}
-            aria-current={activeRow && !gameOver ? "true" : undefined}
+            aria-current={activeRow && !gameOver ? 'true' : undefined}
             className={`
               ${styles.row} 
-              ${activeRow && warning ? styles.shake : ""}
-              ${activeRow && !gameOver ? styles.active : ""}
+              ${activeRow && warning ? styles.shake : ''}
+              ${activeRow && !gameOver ? styles.active : ''}
             `}>
             {COLUMN_ARRAY.map((_column, columnIndex) => {
               const color = bgColors?.[columnIndex];
@@ -79,9 +79,9 @@ const Board = ({
                   }
                   className={`
                     ${styles.tile}
-                    ${wave ? styles.wave : ""}
-                    ${activeRow && rowWord?.[columnIndex] ? styles.filled : ""}
-                    ${color ? styles[color] : ""}
+                    ${wave ? styles.wave : ''}
+                    ${activeRow && rowWord?.[columnIndex] ? styles.filled : ''}
+                    ${color ? styles[color] : ''}
                     `}>
                   {rowWord?.[columnIndex]}
                 </div>

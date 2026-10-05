@@ -1,9 +1,9 @@
-import styles from "@/app/_components/keyboard/Keyboard.module.css";
-import { Color } from "@/app/lib/colors";
-const TOP_CHARACTERS = "QWERTYUIOP";
-const MIDDLE_CHARACTERS = "ASDFGHJKL";
-const BOTTOM_CHARACTERS = "ZXCVBNM";
-const ENTER = "ENTER";
+import styles from '@/app/_components/keyboard/Keyboard.module.css';
+import { Color } from '@/app/lib/colors';
+const TOP_CHARACTERS = 'QWERTYUIOP';
+const MIDDLE_CHARACTERS = 'ASDFGHJKL';
+const BOTTOM_CHARACTERS = 'ZXCVBNM';
+const ENTER = 'ENTER';
 
 const Keyboard = ({
   buttonPress,
@@ -21,12 +21,12 @@ const Keyboard = ({
       aria-label="Keyboard"
       onMouseDown={(e) => e.preventDefault()}>
       <div className={styles.row}>
-        {TOP_CHARACTERS.split("").map((c) => {
+        {TOP_CHARACTERS.split('').map((c) => {
           const colorClass = keyColors[c];
           return (
             <button
               key={c}
-              className={`${styles.key} ${colorClass ? styles[colorClass] : ""}`}
+              className={`${styles.key} ${colorClass ? styles[colorClass] : ''}`}
               disabled={disabled}
               onClick={() => {
                 buttonPress(c);
@@ -39,12 +39,12 @@ const Keyboard = ({
 
       <div className={styles.row}>
         <div className={styles.spacer}></div>
-        {MIDDLE_CHARACTERS.split("").map((c) => {
+        {MIDDLE_CHARACTERS.split('').map((c) => {
           const colorClass = keyColors[c];
           return (
             <button
               key={c}
-              className={`${styles.key} ${colorClass ? styles[colorClass] : ""}`}
+              className={`${styles.key} ${colorClass ? styles[colorClass] : ''}`}
               disabled={disabled}
               onClick={() => {
                 buttonPress(c);
@@ -60,17 +60,17 @@ const Keyboard = ({
           className={`${styles.key} ${styles.special}`}
           disabled={disabled}
           onClick={() => {
-            buttonPress("Enter");
+            buttonPress('Enter');
           }}>
           {ENTER}
         </button>
-        {BOTTOM_CHARACTERS.split("").map((c) => {
+        {BOTTOM_CHARACTERS.split('').map((c) => {
           const colorClass = keyColors[c];
 
           return (
             <button
               key={c}
-              className={`${styles.key} ${colorClass ? styles[colorClass] : ""}`}
+              className={`${styles.key} ${colorClass ? styles[colorClass] : ''}`}
               disabled={disabled}
               onClick={() => {
                 buttonPress(c);
@@ -84,7 +84,7 @@ const Keyboard = ({
           disabled={disabled}
           aria-label="Backspace"
           onClick={() => {
-            buttonPress("Backspace");
+            buttonPress('Backspace');
           }}>
           <svg
             aria-hidden="true"

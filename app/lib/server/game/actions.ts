@@ -1,10 +1,10 @@
-"use server";
+'use server';
 
-import { calculateWordColors } from "@/app/lib/colors";
-import { ROWS } from "@/app/lib/constants";
-import { sql } from "@/app/lib/server/db";
-import { ANSWER_WORDS } from "./answerWords";
-import { ALLOWED_WORDS } from "./allowedWords";
+import { calculateWordColors } from '@/app/lib/colors';
+import { ROWS } from '@/app/lib/constants';
+import { sql } from '@/app/lib/server/db';
+import { ANSWER_WORDS } from './answerWords';
+import { ALLOWED_WORDS } from './allowedWords';
 
 const pickRandomWord = () => {
   return ANSWER_WORDS[Math.floor(Math.random() * ANSWER_WORDS.length)];
@@ -17,7 +17,7 @@ const allowedWordSet = new Set(ALLOWED_WORDS);
 
 // unknown: callers can send anything, not just strings
 const isValidId = (id: unknown) =>
-  typeof id === "string" && UUID_PATTERN.test(id);
+  typeof id === 'string' && UUID_PATTERN.test(id);
 
 const isGameOver = (guesses: string[], answer: string) => {
   const winner = guesses[guesses.length - 1] === answer;
@@ -41,23 +41,23 @@ export async function startGame() {
 }
 
 export const submitGuess = async (guess: string, id: string) => {
-  const uppercaseGuess = typeof guess === "string" ? guess.toUpperCase() : "";
+  const uppercaseGuess = typeof guess === 'string' ? guess.toUpperCase() : '';
   if (!isValidId(id)) {
-    throw new Error("Must provide a valid game id");
+    throw new Error('Must provide a valid game id');
   }
 
   if (!/^[A-Z]{5}$/.test(uppercaseGuess)) {
-    throw new Error("Invalid guess. Guess should only contain characters a-z");
+    throw new Error('Invalid guess. Guess should only contain characters a-z');
   }
 
   if (!allowedWordSet.has(uppercaseGuess)) {
-    return { error: "Not in word list" };
+    return { error: 'Not in word list' };
   }
 
   const [game] = await sql`SELECT * FROM games WHERE id = ${id}`;
 
   if (!game) {
-    throw new Error("Game does not exist");
+    throw new Error('Game does not exist');
   }
 
   // a finished game doesn't take more guesses; just send back where it ended

@@ -1,15 +1,15 @@
-"use client";
-import { useEffect, useEffectEvent, useState } from "react";
-import Keyboard from "@/app/_components/keyboard/Keyboard";
-import Board from "@/app/_components/board/Board";
-import StatusMessage from "@/app/_components/status-message/StatusMessage";
-import { COLUMNS, ROWS } from "@/app/lib/constants";
-import useGame from "./useGame";
-import { getKeyColors } from "@/app/lib/colors";
-import useDelayedLoading from "@/app/_hooks/useDelayedLoading";
+'use client';
+import { useEffect, useEffectEvent, useState } from 'react';
+import Keyboard from '@/app/_components/keyboard/Keyboard';
+import Board from '@/app/_components/board/Board';
+import StatusMessage from '@/app/_components/status-message/StatusMessage';
+import { COLUMNS, ROWS } from '@/app/lib/constants';
+import useGame from './useGame';
+import { getKeyColors } from '@/app/lib/colors';
+import useDelayedLoading from '@/app/_hooks/useDelayedLoading';
 
 export default function App() {
-  const [currentGuess, setCurrentGuess] = useState("");
+  const [currentGuess, setCurrentGuess] = useState('');
   const [warning, setWarning] = useState<string | null>(null);
   const [warningId, setWarningId] = useState(0);
 
@@ -27,7 +27,7 @@ export default function App() {
   const { showLoading } = useDelayedLoading(isFetching);
 
   const handleReset = async () => {
-    setCurrentGuess("");
+    setCurrentGuess('');
     await newGame();
     setWarning(null);
   };
@@ -51,15 +51,15 @@ export default function App() {
   const handleKey = async (key: string) => {
     if (gameOver || !isReady || isFetching) return;
 
-    if (key === "Enter") {
+    if (key === 'Enter') {
       if (currentGuess.length !== COLUMNS) {
-        showWarning("Not enough letters");
+        showWarning('Not enough letters');
         return;
       }
       const saved = await makeGuess(currentGuess);
 
-      if (saved) setCurrentGuess("");
-    } else if (key === "Backspace") {
+      if (saved) setCurrentGuess('');
+    } else if (key === 'Backspace') {
       setCurrentGuess((prev) => prev.slice(0, prev.length - 1));
     } else {
       if (/^[a-z]$/i.test(key) && currentGuess.length < 5) {
@@ -76,9 +76,9 @@ export default function App() {
   });
 
   useEffect(() => {
-    window.addEventListener("keydown", handleKeyBoardDown);
+    window.addEventListener('keydown', handleKeyBoardDown);
 
-    return () => window.removeEventListener("keydown", handleKeyBoardDown);
+    return () => window.removeEventListener('keydown', handleKeyBoardDown);
   }, []);
 
   const keyColors = getKeyColors(previousGuesses, colors);

@@ -1,14 +1,14 @@
-import nextJest from "next/jest.js";
+import nextJest from 'next/jest.js';
 
-const createJestConfig = nextJest({ dir: "./" });
+const createJestConfig = nextJest({ dir: './' });
 
 /** @type {import('jest').Config} */
 const config = {
-  testEnvironment: "jsdom",
-  setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
+  testEnvironment: 'jsdom',
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   // lets jest.mock() understand the "@/" import alias from tsconfig.json
   moduleNameMapper: {
-    "^@/(.*)$": "<rootDir>/$1",
+    '^@/(.*)$': '<rootDir>/$1',
   },
 };
 

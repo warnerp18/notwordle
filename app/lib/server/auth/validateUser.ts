@@ -1,15 +1,15 @@
-import "server-only";
-import z from "zod";
+import 'server-only';
+import z from 'zod';
 
 const User = z.object({
   // trim first, then check: phone keyboards often add a space after autocomplete
   email: z
     .string()
     .trim()
-    .pipe(z.email({ error: "Enter a valid email address" })),
+    .pipe(z.email({ error: 'Enter a valid email address' })),
   password: z
     .string()
-    .min(8, { error: "Password must be at least 8 characters" }),
+    .min(8, { error: 'Password must be at least 8 characters' }),
 });
 
 export const validateUser = ({

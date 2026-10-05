@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { SHOW_DELAY, MIN_VISIBLE } from "@/app/lib/constants";
+import { useEffect, useRef, useState } from 'react';
+import { SHOW_DELAY, MIN_VISIBLE } from '@/app/lib/constants';
 
 const useDelayedLoading = (isFetching: boolean) => {
   const [showLoading, setShowLoading] = useState(false);
