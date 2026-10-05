@@ -2,7 +2,11 @@ import "server-only";
 import z from "zod";
 
 const User = z.object({
-  email: z.email({ error: "Enter a valid email address" }),
+  // trim first, then check: phone keyboards often add a space after autocomplete
+  email: z
+    .string()
+    .trim()
+    .pipe(z.email({ error: "Enter a valid email address" })),
   password: z
     .string()
     .min(8, { error: "Password must be at least 8 characters" }),

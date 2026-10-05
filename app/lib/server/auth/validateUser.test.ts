@@ -26,6 +26,16 @@ describe("validateUser", () => {
   });
 
   test.each([
+    ["a space after it", "name@gmail.com "],
+    ["a space before it", " name@gmail.com"],
+    ["a tab and newline around it", "\tname@gmail.com\n"],
+  ])("accepts an email with %s", (_description, email) => {
+    expect(validateUser({ email, password: GOOD_PASSWORD })).toEqual({
+      success: true,
+    });
+  });
+
+  test.each([
     ["no @", "namegmail.com"],
     ["nothing before the @", "@gmail.com"],
     ["nothing after the @", "name@"],
