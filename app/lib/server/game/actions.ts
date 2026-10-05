@@ -2,7 +2,7 @@
 
 import { calculateWordColors } from "@/app/lib/colors";
 import { ROWS } from "@/app/lib/constants";
-import { sql } from "./db";
+import { sql } from "../db";
 import { ANSWER_WORDS } from "./answerWords";
 import { ALLOWED_WORDS } from "./allowedWords";
 

@@ -1,4 +1,4 @@
-import { getGame, startGame, submitGuess } from "@/app/lib/server/actions";
+import { getGame, startGame, submitGuess } from "@/app/lib/server/game/actions";
 import { Color } from "@/app/lib/colors";
 import { useEffect, useState } from "react";
 

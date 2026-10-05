@@ -1,7 +1,9 @@
 import "server-only";
-import { sql } from "./db";
-import { SESSION_LENGTH_MS } from "./constants";
+import { sql } from "../db";
 import { cookies } from "next/headers";
+
+export const SESSION_LENGTH_DAYS = 7;
+export const SESSION_LENGTH_MS = SESSION_LENGTH_DAYS * 24 * 60 * 60 * 1000;
 
 export const createSession = async (userId: string) => {
   const expiresAt = new Date(Date.now() + SESSION_LENGTH_MS);

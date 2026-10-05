@@ -2,13 +2,13 @@
  * @jest-environment node
  */
 import { submitGuess } from "./actions";
-import { sql } from "./db";
+import { sql } from "../db";
 
 // server-only throws outside a server build, so switch it off for tests
 jest.mock("server-only", () => ({}));
 
 // no real database: each test says what the queries return
-jest.mock("./db", () => ({ sql: jest.fn() }));
+jest.mock("../db", () => ({ sql: jest.fn() }));
 
 const mockSql = jest.mocked(sql);
 
