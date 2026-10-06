@@ -10,8 +10,6 @@ const gameInitialValue: Game = {
   id: '',
 };
 
-// playerGame: a signed-in player's game, sent by the server with the page.
-// Guests get null and load theirs from localStorage below.
 const useGame = (playerGame: Game | null = null) => {
   const [game, setGame] = useState<Game | null>(playerGame);
   const [isFetching, setIsFetching] = useState(false);
