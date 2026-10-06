@@ -513,6 +513,22 @@ describe('<Game />', () => {
       expect(getRowLetters(1)).toEqual(['C', 'H', 'A', 'I', 'R']);
     });
 
+    it('clears what they typed after signing in', async () => {
+      jest.mocked(login).mockResolvedValue({
+        email: 'a@b.com',
+        game: { id: 'player-1', previousGuesses: [], colors: [], answer: null },
+      });
+      const user = userEvent.setup();
+      render(<Game authenticated={false} />);
+
+      await fillSignin(user);
+      await waitForGameReady();
+
+      // still in the page, just inside the closed modal
+      expect(screen.getByLabelText('Email')).toHaveValue('');
+      expect(screen.getByLabelText('Password')).toHaveValue('');
+    });
+
     it('lets a guest open it later, and locks the board while it is open', async () => {
       const user = userEvent.setup();
       await renderGame(user);

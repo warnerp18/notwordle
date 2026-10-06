@@ -1,4 +1,4 @@
-import { startTransition, useActionState } from 'react';
+import { startTransition, useActionState, useRef } from 'react';
 import styles from './Authentication.module.css';
 import { login } from '@/app/lib/server/auth/actions';
 import { Game } from '@/app/lib/types';
@@ -17,6 +17,9 @@ const Signin = ({
   onGuest: () => void;
   onSwitch: () => void;
 }) => {
+  // so the action can clear the inputs after a success
+  const formRef = useRef<HTMLFormElement>(null);
+
   const signIn = async (_prev: State, formData: FormData) => {
     const email = String(formData.get('email') ?? '');
     const password = String(formData.get('password') ?? '');
@@ -28,6 +31,8 @@ const Signin = ({
     }
 
     onSuccess(status.game);
+    // don't leave their email and password sitting in the closed modal
+    formRef.current?.reset();
     return { error: null };
   };
 
@@ -45,6 +50,7 @@ const Signin = ({
       {/* onSubmit, not action={formAction}, so a wrong password doesn't
           clear what they typed (see Signup) */}
       <form
+        ref={formRef}
         className={styles.form}
         onSubmit={(e) => {
           e.preventDefault();
