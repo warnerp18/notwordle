@@ -1,6 +1,6 @@
 import { startTransition, useActionState } from 'react';
 import styles from './Authentication.module.css';
-import { signup } from '@/app/lib/server/auth/actions';
+import { login } from '@/app/lib/server/auth/actions';
 import { Game } from '@/app/lib/types';
 import { readGuestGameId } from './guestGameId';
 
@@ -8,7 +8,7 @@ interface State {
   error: string | null;
 }
 
-const Signup = ({
+const Signin = ({
   onSuccess,
   onGuest,
   onSwitch,
@@ -17,17 +17,11 @@ const Signup = ({
   onGuest: () => void;
   onSwitch: () => void;
 }) => {
-  const updateFormValues = async (_prev: State, formData: FormData) => {
+  const signIn = async (_prev: State, formData: FormData) => {
     const email = String(formData.get('email') ?? '');
     const password = String(formData.get('password') ?? '');
-    const verifyPassword = String(formData.get('verifyPassword') ?? '');
-    const misMatch = password !== verifyPassword;
 
-    if (misMatch) {
-      return { error: 'Passwords must match' };
-    }
-
-    const status = await signup({ email, password, gameId: readGuestGameId() });
+    const status = await login({ email, password, gameId: readGuestGameId() });
 
     if (status.error || !status.game) {
       return { error: status.error ?? 'Something went wrong. Try again.' };
@@ -37,20 +31,19 @@ const Signup = ({
     return { error: null };
   };
 
-  const [{ error }, formAction, pending] = useActionState(updateFormValues, {
+  const [{ error }, formAction, pending] = useActionState(signIn, {
     error: null,
   });
 
   return (
     <>
-      <h1>Create an account</h1>
+      <h1>Sign in</h1>
       <p>Keep your game going on any device</p>
 
       {error ? <p className={styles.misMatch}>{error}</p> : null}
 
-      {/* onSubmit, not action={formAction}: with action, React clears every
-          field after each submit, even when we only return an error.
-          startTransition is what keeps `pending` working this way. */}
+      {/* onSubmit, not action={formAction}, so a wrong password doesn't
+          clear what they typed (see Signup) */}
       <form
         className={styles.form}
         onSubmit={(e) => {
@@ -74,32 +67,22 @@ const Signup = ({
           id="password"
           className={styles.input}
           name="password"
-          autoComplete="new-password"
-          required
-        />
-        <p>At least 8 characters</p>
-        <label htmlFor="verifyPassword">Confirm password </label>
-        <input
-          type="password"
-          id="verifyPassword"
-          className={styles.input}
-          name="verifyPassword"
-          autoComplete="new-password"
+          autoComplete="current-password"
           required
         />
 
-        <button disabled={pending}>Create account</button>
+        <button disabled={pending}>Sign in</button>
         <div className={styles.divider}>or</div>
         <button type="button" onClick={onGuest}>
           Play as guest
         </button>
         <p className={styles.switchForm}>
-          Have an account?{' '}
+          New here?{' '}
           <button
             type="button"
             className={styles.linkButton}
             onClick={onSwitch}>
-            Sign in
+            Create an account
           </button>
         </p>
       </form>
@@ -107,4 +90,4 @@ const Signup = ({
   );
 };
 
-export default Signup;
+export default Signin;

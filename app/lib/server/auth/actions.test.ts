@@ -1,8 +1,12 @@
-import { signup } from './actions';
-import { hashPassword } from './password';
-import { saveUser } from './users';
-import { createSession, setSessionCookie } from './sessions';
-import { claimGame, createGame } from '@/app/lib/server/game/games';
+import { login, signup } from './actions';
+import { hashPassword, verifyPassword } from './password';
+import { findUser, saveUser } from './users';
+import { createSession, deleteSession, setSessionCookie } from './sessions';
+import {
+  claimGame,
+  createGame,
+  findCurrentGame,
+} from '@/app/lib/server/game/games';
 
 // server-only throws outside a server build, so switch it off for tests
 jest.mock('server-only', () => ({}));
@@ -10,11 +14,15 @@ jest.mock('server-only', () => ({}));
 // validateUser and normalizeEmail are real (plain functions, no database).
 // Everything slow or with side effects is faked, so each test says what
 // it returns and can check whether it was called at all.
-jest.mock('./password', () => ({ hashPassword: jest.fn() }));
-jest.mock('./users', () => ({ saveUser: jest.fn() }));
+jest.mock('./password', () => ({
+  hashPassword: jest.fn(),
+  verifyPassword: jest.fn(),
+}));
+jest.mock('./users', () => ({ saveUser: jest.fn(), findUser: jest.fn() }));
 jest.mock('./sessions', () => ({
   createSession: jest.fn(),
   setSessionCookie: jest.fn(),
+  deleteSession: jest.fn(),
 }));
 // games.ts loads the database connection, so fake that too
 jest.mock('@/app/lib/server/db', () => ({ sql: jest.fn() }));
@@ -24,6 +32,7 @@ jest.mock('@/app/lib/server/game/games', () => ({
   ...jest.requireActual('@/app/lib/server/game/games'),
   claimGame: jest.fn(),
   createGame: jest.fn(),
+  findCurrentGame: jest.fn(),
 }));
 
 const mockHashPassword = jest.mocked(hashPassword);
@@ -32,6 +41,14 @@ const mockCreateSession = jest.mocked(createSession);
 const mockSetSessionCookie = jest.mocked(setSessionCookie);
 const mockClaimGame = jest.mocked(claimGame);
 const mockCreateGame = jest.mocked(createGame);
+const mockVerifyPassword = jest.mocked(verifyPassword);
+const mockFindUser = jest.mocked(findUser);
+const mockDeleteSession = jest.mocked(deleteSession);
+const mockFindCurrentGame = jest.mocked(findCurrentGame);
+
+// `const [row] = await sql...` is undefined when nothing matches, but the
+// loose row types say it's always a row, so tests need a cast to say "no row"
+const NO_ROW = undefined as never;
 
 const USER_ID = '8a1c2e4f-6b3d-4e5a-9c7f-1d2e3f4a5b6c';
 const SESSION_ID = 'c4d5e6f7-1a2b-4c3d-8e9f-0a1b2c3d4e5f';
@@ -249,6 +266,145 @@ describe('signup', () => {
 
       await expect(signup(GOOD_INPUT)).rejects.toThrow('connection lost');
       expect(mockCreateSession).not.toHaveBeenCalled();
+    });
+  });
+});
+
+describe('login', () => {
+  const STORED_USER = {
+    id: USER_ID,
+    email: 'Name+Wordle@Gmail.com',
+    password_hash: PASSWORD_HASH,
+  };
+  const LOGIN_INPUT = { email: ' name@gmail.com ', password: 'correct horse' };
+  const CURRENT_GAME = { id: NEW_GAME_ID, answer: 'SLATE', guesses: ['CRANE'] };
+
+  // right email and password, no guest game, they have a current game
+  const mockGoodLogin = () => {
+    mockFindUser.mockResolvedValueOnce(STORED_USER);
+    mockVerifyPassword.mockResolvedValueOnce(true);
+    mockClaimGame.mockResolvedValueOnce(null);
+    mockFindCurrentGame.mockResolvedValueOnce(CURRENT_GAME);
+    mockCreateSession.mockResolvedValueOnce(SESSION_ID);
+  };
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+  });
+
+  describe('when it fails', () => {
+    test('rejects an unknown email', async () => {
+      mockFindUser.mockResolvedValueOnce(NO_ROW);
+      mockVerifyPassword.mockResolvedValueOnce(false);
+
+      expect(await login(LOGIN_INPUT)).toEqual({
+        error: 'Incorrect email or password',
+      });
+    });
+
+    test('still checks a password for an unknown email, so it takes as long', async () => {
+      mockFindUser.mockResolvedValueOnce(NO_ROW);
+      mockVerifyPassword.mockResolvedValueOnce(false);
+
+      await login(LOGIN_INPUT);
+
+      expect(mockVerifyPassword).toHaveBeenCalledTimes(1);
+    });
+
+    test('rejects a wrong password with the same message', async () => {
+      mockFindUser.mockResolvedValueOnce(STORED_USER);
+      mockVerifyPassword.mockResolvedValueOnce(false);
+
+      expect(await login(LOGIN_INPUT)).toEqual({
+        error: 'Incorrect email or password',
+      });
+    });
+
+    test("doesn't touch sessions or games", async () => {
+      mockFindUser.mockResolvedValueOnce(STORED_USER);
+      mockVerifyPassword.mockResolvedValueOnce(false);
+
+      await login(LOGIN_INPUT);
+
+      expect(mockDeleteSession).not.toHaveBeenCalled();
+      expect(mockCreateSession).not.toHaveBeenCalled();
+      expect(mockSetSessionCookie).not.toHaveBeenCalled();
+      expect(mockClaimGame).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('when it works', () => {
+    test('looks the user up by the normalized email', async () => {
+      mockGoodLogin();
+
+      await login(LOGIN_INPUT);
+
+      expect(mockFindUser).toHaveBeenCalledWith('name@gmail.com');
+    });
+
+    test('checks the password as typed against the stored hash', async () => {
+      mockGoodLogin();
+
+      await login(LOGIN_INPUT);
+
+      expect(mockVerifyPassword).toHaveBeenCalledWith(
+        'correct horse',
+        PASSWORD_HASH,
+      );
+    });
+
+    test('returns the email as stored and their current game, answer hidden', async () => {
+      mockGoodLogin();
+
+      expect(await login(LOGIN_INPUT)).toEqual({
+        email: 'Name+Wordle@Gmail.com',
+        game: {
+          id: NEW_GAME_ID,
+          previousGuesses: ['CRANE'],
+          colors: [['gray', 'gray', 'green', 'gray', 'green']],
+          answer: null,
+        },
+      });
+    });
+
+    test("ends this browser's old session, then starts a new one and sets the cookie", async () => {
+      mockGoodLogin();
+
+      await login(LOGIN_INPUT);
+
+      expect(mockDeleteSession).toHaveBeenCalledTimes(1);
+      expect(mockCreateSession).toHaveBeenCalledWith(USER_ID);
+      expect(mockSetSessionCookie).toHaveBeenCalledWith(SESSION_ID);
+      expect(mockDeleteSession.mock.invocationCallOrder[0]).toBeLessThan(
+        mockCreateSession.mock.invocationCallOrder[0],
+      );
+    });
+
+    test('claims the guest game first', async () => {
+      mockFindUser.mockResolvedValueOnce(STORED_USER);
+      mockVerifyPassword.mockResolvedValueOnce(true);
+      mockClaimGame.mockResolvedValueOnce(GUEST_GAME);
+      mockCreateSession.mockResolvedValueOnce(SESSION_ID);
+
+      const result = await login({ ...LOGIN_INPUT, gameId: GUEST_GAME_ID });
+
+      expect(mockClaimGame).toHaveBeenCalledWith(GUEST_GAME_ID, USER_ID);
+      expect(mockFindCurrentGame).not.toHaveBeenCalled();
+      expect(result).toMatchObject({ game: { id: GUEST_GAME_ID } });
+    });
+
+    test('creates a game when there is nothing to claim and no current game', async () => {
+      mockFindUser.mockResolvedValueOnce(STORED_USER);
+      mockVerifyPassword.mockResolvedValueOnce(true);
+      mockClaimGame.mockResolvedValueOnce(null);
+      mockFindCurrentGame.mockResolvedValueOnce(NO_ROW);
+      mockCreateGame.mockResolvedValueOnce(NEW_GAME);
+      mockCreateSession.mockResolvedValueOnce(SESSION_ID);
+
+      const result = await login(LOGIN_INPUT);
+
+      expect(mockCreateGame).toHaveBeenCalledWith(USER_ID);
+      expect(result).toMatchObject({ game: { id: NEW_GAME_ID } });
     });
   });
 });

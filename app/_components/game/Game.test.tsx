@@ -1,6 +1,6 @@
 import Game from './Game';
 import { startGame, submitGuess } from '@/app/lib/server/game/actions';
-import { signup } from '@/app/lib/server/auth/actions';
+import { login, signup } from '@/app/lib/server/auth/actions';
 
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -37,6 +37,7 @@ jest.mock('@/app/lib/server/game/actions', () => {
 // the real file is server-only (database, cookies), so Jest gets a stand-in
 jest.mock('@/app/lib/server/auth/actions', () => ({
   signup: jest.fn(),
+  login: jest.fn(),
 }));
 
 const getRowLetters = (rowNumber: number) =>
@@ -68,6 +69,8 @@ const fillSignup = async (
   password = 'hunter22',
   confirm = password,
 ) => {
+  // the modal opens on sign in; switch to the sign-up form
+  await user.click(screen.getByRole('button', { name: 'Create an account' }));
   await user.type(screen.getByLabelText('Email'), 'a@b.com');
   await user.type(screen.getByLabelText('Password'), password);
   await user.type(screen.getByLabelText('Confirm password'), confirm);
@@ -81,6 +84,7 @@ describe('<Game />', () => {
     localStorage.clear();
     jest.mocked(startGame).mockClear();
     jest.mocked(signup).mockReset();
+    jest.mocked(login).mockReset();
   });
 
   afterEach(() => {
@@ -424,7 +428,7 @@ describe('<Game />', () => {
       render(<Game authenticated={false} />);
       await waitForGameReady();
       // a returning guest; open the modal the way a sign-up button would
-      act(() => (getModal() as HTMLDialogElement).show());
+      await user.click(screen.getByRole('button', { name: 'Sign in' }));
 
       await fillSignup(user);
 
@@ -433,6 +437,121 @@ describe('<Game />', () => {
           expect.objectContaining({ gameId: 'guest-1' }),
         ),
       );
+    });
+  });
+  describe('sign in', () => {
+    const fillSignin = async (
+      user: ReturnType<typeof userEvent.setup>,
+      password = 'hunter22',
+    ) => {
+      await user.type(screen.getByLabelText('Email'), 'a@b.com');
+      await user.type(screen.getByLabelText('Password'), password);
+      await user.click(screen.getByRole('button', { name: 'Sign in' }));
+    };
+
+    it('is the form the modal opens on', () => {
+      render(<Game authenticated={false} />);
+
+      expect(
+        screen.getByRole('heading', { name: 'Sign in', hidden: true }),
+      ).toBeInTheDocument();
+      expect(screen.queryByLabelText('Confirm password')).toBeNull();
+    });
+
+    it('switches to sign up and back', async () => {
+      const user = userEvent.setup();
+      render(<Game authenticated={false} />);
+
+      await user.click(
+        screen.getByRole('button', { name: 'Create an account' }),
+      );
+      expect(screen.getByLabelText('Confirm password')).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'Sign in' }));
+      expect(screen.queryByLabelText('Confirm password')).toBeNull();
+    });
+
+    it('shows the message, keeps what they typed, and stays open on a wrong password', async () => {
+      jest
+        .mocked(login)
+        .mockResolvedValue({ error: 'Incorrect email or password' });
+      const user = userEvent.setup();
+      render(<Game authenticated={false} />);
+
+      await fillSignin(user, 'wrong-one');
+
+      expect(
+        await screen.findByText('Incorrect email or password'),
+      ).toBeInTheDocument();
+      expect(screen.getByLabelText('Email')).toHaveValue('a@b.com');
+      expect(getModal()).toHaveAttribute('open');
+      expect(screen.getByRole('button', { name: 'T' })).toBeDisabled();
+    });
+
+    it('closes, shows their game, and unlocks after signing in', async () => {
+      jest.mocked(login).mockResolvedValue({
+        email: 'a@b.com',
+        game: {
+          id: 'player-1',
+          previousGuesses: ['CHAIR'],
+          colors: [['yellow', 'gray', 'green', 'gray', 'yellow']],
+          answer: null,
+        },
+      });
+      const user = userEvent.setup();
+      render(<Game authenticated={false} />);
+
+      await fillSignin(user);
+
+      await waitForGameReady();
+      expect(login).toHaveBeenCalledWith({
+        email: 'a@b.com',
+        password: 'hunter22',
+        gameId: '',
+      });
+      expect(getModal()).not.toHaveAttribute('open');
+      expect(getRowLetters(1)).toEqual(['C', 'H', 'A', 'I', 'R']);
+    });
+
+    it('lets a guest open it later, and locks the board while it is open', async () => {
+      const user = userEvent.setup();
+      await renderGame(user);
+
+      await user.click(screen.getByRole('button', { name: 'Sign in' }));
+
+      expect(getModal()).toHaveAttribute('open');
+      expect(screen.getByRole('button', { name: 'T' })).toBeDisabled();
+    });
+
+    it('keeps the current game when a guest closes it with "Play as guest"', async () => {
+      const user = userEvent.setup();
+      await renderGame(user);
+      await user.keyboard('chair{Enter}');
+      await waitFor(() => expect(getRowLabels(1)[0]).toBe('C, present'));
+
+      await user.click(screen.getByRole('button', { name: 'Sign in' }));
+      await user.click(screen.getByRole('button', { name: 'Play as guest' }));
+
+      expect(getModal()).not.toHaveAttribute('open');
+      expect(startGame).toHaveBeenCalledTimes(1);
+      expect(getRowLetters(1)).toEqual(['C', 'H', 'A', 'I', 'R']);
+    });
+
+    it("doesn't show the guest button to a signed-in player", async () => {
+      render(
+        <Game
+          authenticated={true}
+          playerGame={{
+            id: 'player-1',
+            previousGuesses: [],
+            colors: [],
+            answer: null,
+          }}
+        />,
+      );
+      await waitForGameReady();
+
+      expect(screen.queryByRole('button', { name: 'Sign in' })).toBeNull();
     });
   });
 });

@@ -7,7 +7,7 @@ import { COLUMNS, GAME_ID_STORAGE_KEY, ROWS } from '@/app/lib/constants';
 import useGame from './useGame';
 import { getKeyColors } from '@/app/lib/colors';
 import useDelayedLoading from '@/app/_hooks/useDelayedLoading';
-import Signup from '@/app/_components/authentication/Signup';
+import AuthDialog from '@/app/_components/authentication/AuthDialog';
 import { Game as GameData } from '@/app/lib/types';
 
 export type UserType = 'unknown' | 'guest' | 'player';
@@ -33,6 +33,13 @@ export default function App({
       return 'unknown';
     }
   });
+
+  // whether the sign in / sign up modal is showing. A first visit opens with
+  // it; a guest can open it later from the "Sign in" button.
+  const [authOpen, setAuthOpen] = useState(() => userType === 'unknown');
+  // the board and keyboard ignore input until they've chosen, and while the
+  // modal is open (so typing an email doesn't type into the board)
+  const locked = userType === 'unknown' || authOpen;
 
   const modelRef = useRef<HTMLDialogElement>(null);
 
@@ -73,13 +80,7 @@ export default function App({
   const gameOver = previousGuesses.length === ROWS || winner;
 
   const handleKey = async (key: string) => {
-    if (
-      gameOver ||
-      !isReady ||
-      isFetching ||
-      (!authenticated && userType === 'unknown')
-    )
-      return;
+    if (gameOver || !isReady || isFetching || locked) return;
 
     if (key === 'Enter') {
       if (currentGuess.length !== COLUMNS) {
@@ -110,8 +111,27 @@ export default function App({
     // we can't check cookies so we need to call BE
     // if no session then show sign in/signup
     // disable keyboard and game so typing doesn't effect board
-    if (!authenticated && userType === 'unknown') modelRef.current?.show();
-  }, [authenticated, userType]);
+    if (authOpen) {
+      modelRef.current?.show();
+    } else {
+      modelRef.current?.close();
+    }
+  }, [authOpen]);
+
+  const handleAuthSuccess = (game: GameData) => {
+    setAuthOpen(false);
+    setUserType('player');
+    loadGame(game);
+  };
+
+  const handleGuest = () => {
+    setAuthOpen(false);
+    // a guest who reopened the modal keeps the game they're playing
+    if (userType === 'unknown') {
+      setUserType('guest');
+      newGame();
+    }
+  };
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyBoardDown);
@@ -122,13 +142,20 @@ export default function App({
   const keyColors = getKeyColors(previousGuesses, colors);
 
   return (
-    <div className="mx-auto flex h-dvh w-full max-w-(--app-max-width) flex-col justify-between px-2 py-[25px] min-[520px]:justify-start">
-      <Signup
+    <div className="relative mx-auto flex h-dvh w-full max-w-(--app-max-width) flex-col justify-between px-2 py-[25px] min-[520px]:justify-start">
+      <AuthDialog
         ref={modelRef}
-        setUserType={setUserType}
-        newGame={newGame}
-        loadGame={loadGame}
+        onSuccess={handleAuthSuccess}
+        onGuest={handleGuest}
       />
+      {userType === 'guest' && !authOpen ? (
+        <button
+          type="button"
+          className="absolute top-2 right-2 cursor-pointer text-sm font-bold hover:underline"
+          onClick={() => setAuthOpen(true)}>
+          Sign in
+        </button>
+      ) : null}
       <StatusMessage
         gameOver={gameOver}
         winner={winner}
@@ -150,12 +177,7 @@ export default function App({
       <Keyboard
         buttonPress={handleKey}
         keyColors={keyColors}
-        disabled={
-          gameOver ||
-          !isReady ||
-          isFetching ||
-          (!authenticated && userType === 'unknown')
-        }
+        disabled={gameOver || !isReady || isFetching || locked}
       />
     </div>
   );
