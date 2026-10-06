@@ -4,7 +4,7 @@ import { calculateWordColors } from '@/app/lib/colors';
 import { ROWS } from '@/app/lib/constants';
 import { sql } from '@/app/lib/server/db';
 import { ANSWER_WORDS } from './answerWords';
-import { GameState } from '@/app/lib/types';
+import { Game, GameState } from '@/app/lib/types';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -67,4 +67,12 @@ export const findCurrentGame = async (userId: string) => {
   `;
 
   return game ?? null;
+};
+
+// A signed-in player's game for the page: their newest unfinished one, or a
+// new one. Shaped for the browser (answer hidden until the game is over).
+export const getPlayerGame = async (userId: string): Promise<Game> => {
+  const game = (await findCurrentGame(userId)) ?? (await createGame(userId));
+
+  return { ...toGameState(game.guesses, game.answer), id: game.id };
 };

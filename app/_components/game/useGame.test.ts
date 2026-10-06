@@ -350,4 +350,23 @@ describe('useGame', () => {
     expect(result.current.isReady).toBe(true);
     expect(result.current.error).toBeNull();
   });
+
+  it("starts ready with a signed-in player's game, without asking the server", async () => {
+    localStorage.setItem('gameId', 'old-guest-1');
+    mockSubmitGuess.mockResolvedValue(chairResult);
+    const { result } = renderHook(() => useGame(signedInGame));
+
+    await act(async () => {});
+
+    expect(result.current.isReady).toBe(true);
+    expect(result.current.previousGuesses).toEqual(['CHAIR']);
+    // the server already sent it, so no resume or new game
+    expect(mockGetGame).not.toHaveBeenCalled();
+    expect(mockStartGame).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await result.current.makeGuess('TOWER');
+    });
+    expect(mockSubmitGuess).toHaveBeenCalledWith('TOWER', 'claimed-1');
+  });
 });

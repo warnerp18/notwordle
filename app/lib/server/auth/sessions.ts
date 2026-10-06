@@ -15,6 +15,22 @@ export const createSession = async (userId: string) => {
   return session.id;
 };
 
+// Who is signed in on this request? The user's id, or null when there's no
+// cookie, the cookie isn't a real id, or the session is unknown or expired.
+export const getSessionUserId = async (): Promise<string | null> => {
+  const cookieStore = await cookies();
+  const sessionId = cookieStore.get('session')?.value;
+
+  if (!isValidId(sessionId)) return null;
+
+  const [session] = await sql`
+    SELECT user_id FROM sessions
+    WHERE id = ${sessionId} AND expires_at > now()
+  `;
+
+  return session?.user_id ?? null;
+};
+
 export const deleteSession = async () => {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get('session');

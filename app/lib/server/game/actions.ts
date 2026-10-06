@@ -9,14 +9,18 @@ import {
   toGameState,
 } from '@/app/lib/server/game/games';
 import { ALLOWED_WORDS } from './allowedWords';
+import { getSessionUserId } from '@/app/lib/server/auth/sessions';
 
 const allowedWordSet = new Set(ALLOWED_WORDS);
 
 export async function startGame() {
   const answer = pickRandomWord();
+  // signed in: the new game is theirs. Guest: null, an ownerless game.
+  // Read from the session, never from an argument the browser could fake.
+  const userId = await getSessionUserId();
 
   const [game] =
-    await sql`INSERT INTO games (answer) VALUES (${answer}) RETURNING id`;
+    await sql`INSERT INTO games (answer, user_id) VALUES (${answer}, ${userId}) RETURNING id`;
 
   return game.id;
 }

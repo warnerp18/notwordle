@@ -1,8 +1,9 @@
 /**
  * @jest-environment node
  */
-import { submitGuess } from './actions';
+import { startGame, submitGuess } from './actions';
 import { sql } from '@/app/lib/server/db';
+import { getSessionUserId } from '@/app/lib/server/auth/sessions';
 
 // server-only throws outside a server build, so switch it off for tests
 jest.mock('server-only', () => ({}));
@@ -10,7 +11,13 @@ jest.mock('server-only', () => ({}));
 // no real database: each test says what the queries return
 jest.mock('@/app/lib/server/db', () => ({ sql: jest.fn() }));
 
+// who's signed in: each test decides (cookies only work in a real request)
+jest.mock('@/app/lib/server/auth/sessions', () => ({
+  getSessionUserId: jest.fn(),
+}));
+
 const mockSql = jest.mocked(sql);
+const mockGetSessionUserId = jest.mocked(getSessionUserId);
 
 const GAME_ID = '3f2b8c1e-4d5a-4b6c-8d7e-9f0a1b2c3d4e';
 
@@ -98,5 +105,30 @@ describe('submitGuess', () => {
 
   it("still throws for a guess that isn't 5 letters", async () => {
     await expect(submitGuess('AB1', GAME_ID)).rejects.toThrow();
+  });
+});
+
+describe('startGame', () => {
+  const USER_ID = '8a1c2e4f-6b3d-4e5a-9c7f-1d2e3f4a5b6c';
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    mockSql.mockResolvedValue([{ id: GAME_ID }]);
+  });
+
+  it("makes a signed-in player's new game theirs", async () => {
+    mockGetSessionUserId.mockResolvedValue(USER_ID);
+
+    expect(await startGame()).toBe(GAME_ID);
+    // sql(textParts, answer, userId)
+    expect(mockSql.mock.calls[0][2]).toBe(USER_ID);
+  });
+
+  it("leaves a guest's new game without an owner", async () => {
+    mockGetSessionUserId.mockResolvedValue(null);
+
+    await startGame();
+
+    expect(mockSql.mock.calls[0][2]).toBeNull();
   });
 });

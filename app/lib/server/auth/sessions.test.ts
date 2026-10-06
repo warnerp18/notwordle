@@ -1,5 +1,10 @@
 import { cookies } from 'next/headers';
-import { createSession, setSessionCookie, SESSION_LENGTH_MS } from './sessions';
+import {
+  createSession,
+  getSessionUserId,
+  setSessionCookie,
+  SESSION_LENGTH_MS,
+} from './sessions';
 import { sql } from '@/app/lib/server/db';
 
 // server-only throws outside a server build, so switch it off for tests
@@ -116,5 +121,47 @@ describe('setSessionCookie', () => {
     const options = mockSet.mock.calls[0][2];
     expect(options.maxAge).toBe(7 * 24 * 60 * 60);
     expect(options.maxAge).toBe(SESSION_LENGTH_MS / 1000);
+  });
+});
+
+describe('getSessionUserId', () => {
+  // a fake cookie store holding this "session" cookie value (or none)
+  const withCookie = (value?: string) =>
+    mockCookies.mockResolvedValue({
+      get: () => (value === undefined ? undefined : { value }),
+    } as unknown as Awaited<ReturnType<typeof cookies>>);
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+  });
+
+  test('returns null without a session cookie, without asking the database', async () => {
+    withCookie();
+
+    expect(await getSessionUserId()).toBeNull();
+    expect(mockSql).not.toHaveBeenCalled();
+  });
+
+  test("returns null for a cookie that isn't a real id, without asking the database", async () => {
+    withCookie('hello');
+
+    expect(await getSessionUserId()).toBeNull();
+    expect(mockSql).not.toHaveBeenCalled();
+  });
+
+  test("returns the session's user id", async () => {
+    withCookie(SESSION_ID);
+    mockSql.mockResolvedValueOnce([{ user_id: USER_ID }]);
+
+    expect(await getSessionUserId()).toBe(USER_ID);
+    expect(mockSql.mock.calls[0].slice(1)).toEqual([SESSION_ID]);
+  });
+
+  test('returns null when the session is unknown or expired', async () => {
+    withCookie(SESSION_ID);
+    // the query only matches sessions whose expires_at is still ahead
+    mockSql.mockResolvedValueOnce([]);
+
+    expect(await getSessionUserId()).toBeNull();
   });
 });

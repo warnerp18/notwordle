@@ -10,8 +10,10 @@ const gameInitialValue: Game = {
   id: '',
 };
 
-const useGame = () => {
-  const [game, setGame] = useState<Game | null>(null);
+// playerGame: a signed-in player's game, sent by the server with the page.
+// Guests get null and load theirs from localStorage below.
+const useGame = (playerGame: Game | null = null) => {
+  const [game, setGame] = useState<Game | null>(playerGame);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,6 +95,9 @@ const useGame = () => {
     let ignore = false;
 
     const beginGame = async () => {
+      // signed in: the server already gave us the game
+      if (playerGame) return;
+
       try {
         const savedId = getIdFromLocalStorage();
 
@@ -121,7 +126,9 @@ const useGame = () => {
     return () => {
       ignore = true;
     };
-  }, []);
+    // playerGame comes from the server with the page and never changes after,
+    // so this still runs once
+  }, [playerGame]);
 
   return {
     isFetching,

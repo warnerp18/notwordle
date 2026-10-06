@@ -8,10 +8,17 @@ import useGame from './useGame';
 import { getKeyColors } from '@/app/lib/colors';
 import useDelayedLoading from '@/app/_hooks/useDelayedLoading';
 import Signup from '@/app/_components/authentication/Signup';
+import { Game as GameData } from '@/app/lib/types';
 
 export type UserType = 'unknown' | 'guest' | 'player';
 
-export default function App({ authenticated }: { authenticated: boolean }) {
+export default function App({
+  authenticated,
+  playerGame = null,
+}: {
+  authenticated: boolean;
+  playerGame?: GameData | null;
+}) {
   const [currentGuess, setCurrentGuess] = useState('');
   const [warning, setWarning] = useState<string | null>(null);
   const [warningId, setWarningId] = useState(0);
@@ -39,7 +46,7 @@ export default function App({ authenticated }: { authenticated: boolean }) {
     makeGuess,
     isFetching,
     error,
-  } = useGame();
+  } = useGame(playerGame);
 
   const { showLoading } = useDelayedLoading(isFetching);
 

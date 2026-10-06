@@ -1,13 +1,16 @@
 import Game from '@/app/_components/game/Game';
-import { cookies } from 'next/headers';
+import { getSessionUserId } from '@/app/lib/server/auth/sessions';
+import { getPlayerGame } from '@/app/lib/server/game/games';
 
 export default async function Home() {
-  const cookieStore = await cookies();
-  const session = cookieStore.get('session');
+  // runs on the server before the page is sent, so a signed-in player's game
+  // is already there on the first paint (guests load theirs in the browser)
+  const userId = await getSessionUserId();
+  const playerGame = userId ? await getPlayerGame(userId) : null;
 
   return (
     <main>
-      <Game authenticated={Boolean(session?.value)} />
+      <Game authenticated={userId !== null} playerGame={playerGame} />
     </main>
   );
 }
