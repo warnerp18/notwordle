@@ -1,4 +1,4 @@
-import { RefObject, useActionState } from 'react';
+import { RefObject, startTransition, useActionState } from 'react';
 import styles from './Authentication.module.css';
 import { signup } from '@/app/lib/server/auth/actions';
 import { GAME_ID_STORAGE_KEY } from '@/app/lib/constants';
@@ -84,7 +84,16 @@ const Signup = ({
 
         {error ? <p className={styles.misMatch}>{error}</p> : null}
 
-        <form className={styles.form} action={formAction}>
+        {/* onSubmit, not action={formAction}: with action, React clears every
+            field after each submit, even when we only return an error.
+            startTransition is what keeps `pending` working this way. */}
+        <form
+          className={styles.form}
+          onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            startTransition(() => formAction(formData));
+          }}>
           <label htmlFor="email">Email </label>
           <input
             type="email"

@@ -329,10 +329,34 @@ describe('<Game />', () => {
       expect(getRowLetters(1)).toEqual(['C', 'H', 'A', 'I', 'R']);
     });
 
-    it("doesn't ask someone who is signed in", () => {
-      render(<Game authenticated={true} />);
+    it('shows a signed-in player the game the server sent, with no modal', async () => {
+      render(
+        <Game
+          authenticated={true}
+          playerGame={{
+            id: 'player-1',
+            previousGuesses: ['CHAIR'],
+            colors: [['yellow', 'gray', 'green', 'gray', 'yellow']],
+            answer: null,
+          }}
+        />,
+      );
 
+      await waitForGameReady();
       expect(getModal()).not.toHaveAttribute('open');
+      expect(getRowLetters(1)).toEqual(['C', 'H', 'A', 'I', 'R']);
+    });
+
+    it('keeps what they typed when the passwords differ', async () => {
+      const user = userEvent.setup();
+      render(<Game authenticated={false} />);
+
+      await fillSignup(user, 'hunter22', 'hunter23');
+      await screen.findByText('Passwords must match');
+
+      expect(screen.getByLabelText('Email')).toHaveValue('a@b.com');
+      expect(screen.getByLabelText('Password')).toHaveValue('hunter22');
+      expect(screen.getByLabelText('Confirm password')).toHaveValue('hunter23');
     });
 
     it("shows a message and doesn't sign up when the passwords differ", async () => {
