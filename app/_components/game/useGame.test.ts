@@ -25,10 +25,22 @@ const chairResult: GameState = {
   answer: null,
 };
 
+// a first visit doesn't start a game on its own; the player has to choose
+// (newGame is what "Play as guest" calls)
 const renderReadyGame = async () => {
   const hook = renderHook(() => useGame());
-  await waitFor(() => expect(hook.result.current.isReady).toBe(true));
+  await act(async () => {
+    await hook.result.current.newGame();
+  });
+  expect(hook.result.current.isReady).toBe(true);
   return hook;
+};
+
+const signedInGame = {
+  id: 'claimed-1',
+  previousGuesses: ['CHAIR'],
+  colors: chairResult.colors,
+  answer: null,
 };
 
 describe('useGame', () => {
@@ -43,20 +55,35 @@ describe('useGame', () => {
     jest.restoreAllMocks();
   });
 
-  it('starts a game on mount and is ready once the id arrives', async () => {
+  it("doesn't start a game on a first visit until the player chooses", async () => {
     const { result } = renderHook(() => useGame());
+
+    // let the first-load effect finish
+    await act(async () => {});
 
     expect(result.current.isReady).toBe(false);
     expect(result.current.previousGuesses).toEqual([]);
     expect(result.current.colors).toEqual([]);
     expect(result.current.answer).toBeNull();
-
-    await waitFor(() => expect(result.current.isReady).toBe(true));
-    expect(mockStartGame).toHaveBeenCalledTimes(1);
+    expect(mockStartGame).not.toHaveBeenCalled();
+    expect(mockGetGame).not.toHaveBeenCalled();
   });
 
-  it('shows an error and stays not ready when starting a game fails', async () => {
-    mockStartGame.mockRejectedValue(new Error('offline'));
+  it('starts a game and is ready once newGame gets an id', async () => {
+    const { result } = renderHook(() => useGame());
+
+    await act(async () => {
+      await result.current.newGame();
+    });
+
+    expect(mockStartGame).toHaveBeenCalledTimes(1);
+    expect(result.current.isReady).toBe(true);
+    expect(result.current.previousGuesses).toEqual([]);
+  });
+
+  it('shows an error when resuming a saved game fails', async () => {
+    localStorage.setItem('gameId', 'saved-1');
+    mockGetGame.mockRejectedValue(new Error('offline'));
     const { result } = renderHook(() => useGame());
 
     await waitFor(() =>
@@ -229,7 +256,8 @@ describe('useGame', () => {
     mockGetGame.mockResolvedValue(chairResult);
     mockSubmitGuess.mockResolvedValue(chairResult);
 
-    const { result } = await renderReadyGame();
+    const { result } = renderHook(() => useGame());
+    await waitFor(() => expect(result.current.isReady).toBe(true));
 
     expect(mockGetGame).toHaveBeenCalledWith('saved-1');
     expect(mockStartGame).not.toHaveBeenCalled();
@@ -246,7 +274,9 @@ describe('useGame', () => {
     localStorage.setItem('gameId', 'old-1');
     mockGetGame.mockResolvedValue(null);
 
-    const { result } = await renderReadyGame();
+    // they chose to play before, so they get a fresh game without being asked
+    const { result } = renderHook(() => useGame());
+    await waitFor(() => expect(result.current.isReady).toBe(true));
 
     expect(mockStartGame).toHaveBeenCalledTimes(1);
     expect(result.current.previousGuesses).toEqual([]);
@@ -254,16 +284,47 @@ describe('useGame', () => {
   });
 
   it('saves the new id when starting over', async () => {
-    await renderReadyGame();
+    const { result } = await renderReadyGame();
 
     mockStartGame.mockResolvedValue('game-2');
-    const { result } = renderHook(() => useGame());
-    await waitFor(() => expect(result.current.isReady).toBe(true));
     await act(async () => {
       await result.current.newGame();
     });
 
     expect(localStorage.getItem('gameId')).toBe('game-2');
+  });
+
+  it('shows the game it is given on loadGame and guesses on that id', async () => {
+    mockSubmitGuess.mockResolvedValue(chairResult);
+    const { result } = renderHook(() => useGame());
+
+    act(() => {
+      result.current.loadGame(signedInGame);
+    });
+
+    expect(result.current.isReady).toBe(true);
+    expect(result.current.previousGuesses).toEqual(['CHAIR']);
+    expect(result.current.colors).toEqual(chairResult.colors);
+
+    await act(async () => {
+      await result.current.makeGuess('TOWER');
+    });
+    expect(mockSubmitGuess).toHaveBeenCalledWith('TOWER', 'claimed-1');
+  });
+
+  it("forgets the guest's saved id on loadGame", async () => {
+    await renderReadyGame();
+    expect(localStorage.getItem('gameId')).toBe('game-1');
+
+    const { result } = renderHook(() => useGame());
+    await waitFor(() => expect(result.current.isReady).toBe(true));
+
+    act(() => {
+      result.current.loadGame(signedInGame);
+    });
+
+    // a signed-in player's game comes from the server, not localStorage
+    expect(localStorage.getItem('gameId')).toBeNull();
   });
 
   it('still plays when localStorage is blocked', async () => {

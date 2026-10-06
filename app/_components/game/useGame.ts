@@ -1,35 +1,30 @@
 import { getGame, startGame, submitGuess } from '@/app/lib/server/game/actions';
-import { Color } from '@/app/lib/colors';
 import { useEffect, useState } from 'react';
+import { GAME_ID_STORAGE_KEY } from '@/app/lib/constants';
+import { Game } from '@/app/lib/types';
 
-interface GameShape {
-  answer: string | null;
-  previousGuesses: string[];
-  colors: Color[][];
-}
-const gameInitialValue = {
+const gameInitialValue: Game = {
   answer: null,
   previousGuesses: [],
   colors: [],
+  id: '',
 };
-const STORAGE_KEY = 'gameId';
 
 const useGame = () => {
-  const [gameId, setGameId] = useState<string | null>(null);
-  const [game, setGame] = useState<GameShape>(gameInitialValue);
+  const [game, setGame] = useState<Game | null>(null);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const getIdFromLocalStorage = () => {
     try {
-      return localStorage.getItem(STORAGE_KEY);
+      return localStorage.getItem(GAME_ID_STORAGE_KEY);
     } catch {
       return null;
     }
   };
   const deleteIdFromLocalStorage = () => {
     try {
-      if (gameId) localStorage.removeItem(STORAGE_KEY);
+      if (game) localStorage.removeItem(GAME_ID_STORAGE_KEY);
     } catch {
       // storage blocked: game still works, just can't resume
     }
@@ -37,7 +32,7 @@ const useGame = () => {
 
   const setIdInLocalStorage = (id: string) => {
     try {
-      localStorage.setItem(STORAGE_KEY, id);
+      localStorage.setItem(GAME_ID_STORAGE_KEY, id);
     } catch {
       return null;
     }
@@ -46,14 +41,13 @@ const useGame = () => {
   const newGame = async () => {
     deleteIdFromLocalStorage();
     setIsFetching(true);
-    setGameId(null);
     setError(null);
-    setGame(gameInitialValue);
+    setGame(null);
 
     try {
       const id = await startGame();
 
-      setGameId(id);
+      setGame({ ...gameInitialValue, id });
       setIdInLocalStorage(id);
     } catch {
       setError('Something went wrong. Try again.');
@@ -62,18 +56,25 @@ const useGame = () => {
     }
   };
 
+  const loadGame = (game: Game) => {
+    deleteIdFromLocalStorage();
+    setIsFetching(false);
+    setError(null);
+    setGame(game);
+  };
+
   const makeGuess = async (guess: string) => {
-    if (gameId) {
+    if (game) {
       setError(null);
       setIsFetching(true);
       try {
-        const gameResults = await submitGuess(guess, gameId);
+        const gameResults = await submitGuess(guess, game.id);
         if ('error' in gameResults) {
           setError(gameResults.error);
           return false;
         }
 
-        setGame(gameResults);
+        setGame({ ...gameResults, id: game.id });
 
         return true;
       } catch {
@@ -101,16 +102,14 @@ const useGame = () => {
           if (ignore) return;
 
           if (saved) {
-            setGameId(savedId);
-            setGame(saved);
+            setGame({ ...saved, id: savedId });
             return;
           }
-        }
-
-        const id = await startGame();
-        if (!ignore) {
-          setGameId(id);
-          setIdInLocalStorage(id);
+          const id = await startGame();
+          if (!ignore) {
+            setGame({ ...gameInitialValue, id });
+            setIdInLocalStorage(id);
+          }
         }
       } catch {
         setError('Something went wrong. Try again.');
@@ -126,9 +125,10 @@ const useGame = () => {
 
   return {
     isFetching,
-    ...game,
-    isReady: !!gameId,
+    ...(game ?? gameInitialValue),
+    isReady: game !== null,
     newGame,
+    loadGame,
     makeGuess,
     error,
   };

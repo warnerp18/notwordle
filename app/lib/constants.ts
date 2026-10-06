@@ -5,3 +5,6 @@ export const ROW_ARRAY = Array(ROWS).fill('');
 
 export const SHOW_DELAY = 300;
 export const MIN_VISIBLE = 600;
+
+// localStorage key for a guest's current game id
+export const GAME_ID_STORAGE_KEY = 'gameId';
