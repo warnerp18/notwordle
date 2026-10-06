@@ -25,3 +25,11 @@ export const saveUser = async ({
   }
   return { id: user.id };
 };
+
+export const findUser = async (emailNormalized: string) => {
+  const [user] = await sql`
+    SELECT email, password_hash, id FROM users
+    WHERE email_normalized = ${emailNormalized}
+  `;
+  return user;
+};

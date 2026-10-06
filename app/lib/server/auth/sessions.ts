@@ -1,6 +1,7 @@
 import 'server-only';
 import { sql } from '@/app/lib/server/db';
 import { cookies } from 'next/headers';
+import { isValidId } from '@/app/lib/server/game/games';
 
 export const SESSION_LENGTH_DAYS = 7;
 export const SESSION_LENGTH_MS = SESSION_LENGTH_DAYS * 24 * 60 * 60 * 1000;
@@ -12,6 +13,18 @@ export const createSession = async (userId: string) => {
   `;
 
   return session.id;
+};
+
+export const deleteSession = async () => {
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get('session');
+
+  if (!sessionCookie || !isValidId(sessionCookie.value)) return;
+
+  await sql`
+    DELETE FROM sessions
+    WHERE ${sessionCookie.value} = id
+  `;
 };
 
 export const setSessionCookie = async (sessionId: string) => {

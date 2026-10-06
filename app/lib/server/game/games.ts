@@ -4,6 +4,7 @@ import { calculateWordColors } from '@/app/lib/colors';
 import { ROWS } from '@/app/lib/constants';
 import { sql } from '@/app/lib/server/db';
 import { ANSWER_WORDS } from './answerWords';
+import { GameState } from '@/app/lib/types';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -18,7 +19,7 @@ export const isGameOver = (guesses: string[], answer: string) => {
   return guesses.length === ROWS || winner;
 };
 
-export const toGameState = (guesses: string[], answer: string) => ({
+export const toGameState = (guesses: string[], answer: string): GameState => ({
   previousGuesses: guesses,
   colors: guesses.map((guess) => calculateWordColors(answer, guess)),
   answer: isGameOver(guesses, answer) ? answer : null,
@@ -52,4 +53,18 @@ export const createGame = async (userId: string) => {
     await sql`INSERT INTO games (answer, user_id) VALUES (${answer}, ${userId}) RETURNING id, answer, guesses`;
 
   return game;
+};
+
+export const findCurrentGame = async (userId: string) => {
+  const [game] = await sql`
+    SELECT guesses, answer, id FROM games
+    WHERE user_id = ${userId}
+      AND created_at > now() - interval '24 hours'
+      AND COALESCE(array_length(guesses, 1), 0) < ${ROWS}
+      AND NOT(answer = ANY(guesses))
+    ORDER BY created_at DESC
+    LIMIT 1
+  `;
+
+  return game ?? null;
 };
