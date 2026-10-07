@@ -60,6 +60,18 @@ export const submitGuess = async (guess: string, id: string) => {
     throw new Error('Game does not exist');
   }
 
+  const userId = await getSessionUserId();
+
+  if (game.user_id) {
+    if (userId === null) {
+      return { error: 'Log in to keep playing' };
+    } else if (game.user_id !== userId) {
+      return {
+        error: 'This game belongs to another account. Refresh to load yours.',
+      };
+    }
+  }
+
   // a finished game doesn't take more guesses; just send back where it ended
   if (isGameOver(game.guesses, game.answer)) {
     return toGameState(game.guesses, game.answer);

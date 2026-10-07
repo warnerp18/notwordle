@@ -112,6 +112,74 @@ describe('submitGuess', () => {
   it("still throws for a guess that isn't 5 letters", async () => {
     await expect(submitGuess('AB1', GAME_ID)).rejects.toThrow();
   });
+
+  describe('who can guess', () => {
+    const ALICE = '8a1c2e4f-6b3d-4e5a-9c7f-1d2e3f4a5b6c';
+    const BOB = '5d6e7f8a-9b0c-4d1e-8f2a-3b4c5d6e7f8a';
+
+    // SELECT returns a game owned by `owner`, then UPDATE returns the new guesses
+    const mockOwnedGame = (owner: string | null, guesses: string[] = []) => {
+      mockSql
+        .mockResolvedValueOnce([
+          { id: GAME_ID, answer: 'REACT', guesses, user_id: owner },
+        ])
+        .mockResolvedValueOnce([{ guesses: [...guesses, 'CHAIR'] }]);
+    };
+
+    it('lets anyone guess on a guest game, signed in or not', async () => {
+      mockOwnedGame(null);
+      mockGetSessionUserId.mockResolvedValue(ALICE);
+
+      const result = await submitGuess('CHAIR', GAME_ID);
+
+      expect(result).not.toHaveProperty('error');
+      expect(mockSql).toHaveBeenCalledTimes(2);
+    });
+
+    it('lets the owner guess on their game', async () => {
+      mockOwnedGame(ALICE);
+      mockGetSessionUserId.mockResolvedValue(ALICE);
+
+      const result = await submitGuess('CHAIR', GAME_ID);
+
+      expect(result).toMatchObject({ previousGuesses: ['CHAIR'] });
+      expect(mockSql).toHaveBeenCalledTimes(2);
+    });
+
+    it("asks a logged-out caller to log in, and doesn't save the guess", async () => {
+      mockOwnedGame(ALICE);
+      mockGetSessionUserId.mockResolvedValue(null);
+
+      const result = await submitGuess('CHAIR', GAME_ID);
+
+      expect(result).toEqual({ error: 'Log in to keep playing' });
+      // only the SELECT ran, no UPDATE
+      expect(mockSql).toHaveBeenCalledTimes(1);
+    });
+
+    it("turns away a different account, and doesn't save the guess", async () => {
+      mockOwnedGame(ALICE);
+      mockGetSessionUserId.mockResolvedValue(BOB);
+
+      const result = await submitGuess('CHAIR', GAME_ID);
+
+      expect(result).toEqual({
+        error: 'This game belongs to another account. Refresh to load yours.',
+      });
+      expect(mockSql).toHaveBeenCalledTimes(1);
+    });
+
+    it("doesn't show a stranger the answer to someone else's finished game", async () => {
+      mockOwnedGame(ALICE, ['CRANE', 'REACT']);
+      mockGetSessionUserId.mockResolvedValue(BOB);
+
+      const result = await submitGuess('CHAIR', GAME_ID);
+
+      expect(result).toHaveProperty('error');
+      expect(JSON.stringify(result)).not.toContain('REACT');
+      expect(JSON.stringify(result)).not.toContain('CRANE');
+    });
+  });
 });
 
 describe('startGame', () => {
