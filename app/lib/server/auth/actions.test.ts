@@ -1,4 +1,4 @@
-import { login, signup } from './actions';
+import { login, logout, signup } from './actions';
 import { hashPassword, verifyPassword } from './password';
 import { findUser, saveUser } from './users';
 import { createSession, deleteSession, setSessionCookie } from './sessions';
@@ -465,5 +465,33 @@ describe('login', () => {
       expect(mockCreateGame).toHaveBeenCalledWith(USER_ID);
       expect(result).toMatchObject({ game: { id: NEW_GAME_ID } });
     });
+  });
+});
+
+describe('logout', () => {
+  beforeEach(() => {
+    jest.resetAllMocks();
+    mockCookieJar();
+  });
+
+  test("ends this browser's session", async () => {
+    await logout();
+
+    expect(mockDeleteSession).toHaveBeenCalledTimes(1);
+  });
+
+  test("doesn't create a session or touch any game", async () => {
+    await logout();
+
+    expect(mockCreateSession).not.toHaveBeenCalled();
+    expect(mockSetSessionCookie).not.toHaveBeenCalled();
+    expect(mockClaimGame).not.toHaveBeenCalled();
+    expect(mockCreateGame).not.toHaveBeenCalled();
+  });
+
+  test('passes a database error on to the caller', async () => {
+    mockDeleteSession.mockRejectedValueOnce(new Error('connection lost'));
+
+    await expect(logout()).rejects.toThrow('connection lost');
   });
 });

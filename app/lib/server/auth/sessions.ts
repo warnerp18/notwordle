@@ -31,9 +31,35 @@ export const getSessionUserId = async (): Promise<string | null> => {
   return session?.user_id ?? null;
 };
 
+export const getSessionUser = async (): Promise<{
+  userId: string;
+  email: string;
+} | null> => {
+  const cookieStore = await cookies();
+  const sessionId = cookieStore.get('session')?.value;
+
+  if (!isValidId(sessionId)) return null;
+
+  const [user] = await sql`
+    SELECT users.id, users.email
+    FROM sessions
+    JOIN users ON users.id = sessions.user_id
+    WHERE sessions.id = ${sessionId} AND sessions.expires_at > now()
+  `;
+
+  return user
+    ? {
+        userId: user.id,
+        email: user.email,
+      }
+    : null;
+};
+
 export const deleteSession = async () => {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get('session');
+
+  cookieStore.delete('session');
 
   if (!sessionCookie || !isValidId(sessionCookie.value)) return;
 

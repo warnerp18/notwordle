@@ -12,7 +12,7 @@ const Signup = ({
   onGuest,
   onSwitch,
 }: {
-  onSuccess: (game: Game) => void;
+  onSuccess: (game: Game, email: string) => void;
   onGuest: () => void;
   onSwitch: () => void;
 }) => {
@@ -35,7 +35,7 @@ const Signup = ({
       return { error: status.error ?? 'Something went wrong. Try again.' };
     }
 
-    onSuccess(status.game);
+    onSuccess(status.game, status.email);
     // don't leave their email and password sitting in the closed modal
     formRef.current?.reset();
     return { error: null };

@@ -12,7 +12,7 @@ const AuthDialog = ({
   onGuest,
 }: {
   ref: RefObject<HTMLDialogElement | null>;
-  onSuccess: (game: Game) => void;
+  onSuccess: (game: Game, email: string) => void;
   onGuest: () => void;
 }) => {
   // thinking of good design? rotate card 180? (switching between the forms)

@@ -95,3 +95,7 @@ export const login = async ({ email, password }: Authentication) => {
     game: { ...toGameState(game.guesses, game.answer), id: game.id },
   };
 };
+
+export const logout = async () => {
+  await deleteSession();
+};

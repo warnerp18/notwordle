@@ -1,6 +1,6 @@
 import Game from './Game';
 import { startGame, submitGuess } from '@/app/lib/server/game/actions';
-import { login, signup } from '@/app/lib/server/auth/actions';
+import { login, logout, signup } from '@/app/lib/server/auth/actions';
 
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -36,6 +36,7 @@ jest.mock('@/app/lib/server/game/actions', () => {
 jest.mock('@/app/lib/server/auth/actions', () => ({
   signup: jest.fn(),
   login: jest.fn(),
+  logout: jest.fn(),
 }));
 
 const getRowLetters = (rowNumber: number) =>
@@ -82,6 +83,7 @@ describe('<Game />', () => {
     jest.mocked(startGame).mockClear();
     jest.mocked(signup).mockReset();
     jest.mocked(login).mockReset();
+    jest.mocked(logout).mockReset();
   });
 
   afterEach(() => {
@@ -525,6 +527,62 @@ describe('<Game />', () => {
       await waitForGameReady();
 
       expect(screen.queryByRole('button', { name: 'Sign in' })).toBeNull();
+    });
+  });
+
+  describe('sign out', () => {
+    const renderPlayer = () =>
+      render(
+        <Game
+          initialUserType="player"
+          playerGame={{
+            id: 'player-1',
+            previousGuesses: ['CHAIR'],
+            colors: [['yellow', 'gray', 'green', 'gray', 'yellow']],
+            answer: null,
+          }}
+        />,
+      );
+
+    it('is only shown to a signed-in player', async () => {
+      const user = userEvent.setup();
+      await renderGame(user);
+
+      expect(screen.queryByRole('button', { name: 'Sign out' })).toBeNull();
+    });
+
+    it('clears the board and typed letters, and asks again like a first visit', async () => {
+      jest.mocked(logout).mockResolvedValue(undefined);
+      const user = userEvent.setup();
+      renderPlayer();
+      await waitForGameReady();
+      await user.keyboard('to');
+
+      await user.click(screen.getByRole('button', { name: 'Sign out' }));
+
+      await waitFor(() => expect(getModal()).toHaveAttribute('open'));
+      expect(logout).toHaveBeenCalledTimes(1);
+      expect(getRowLetters(1)).toEqual(['', '', '', '', '']);
+      expect(screen.getByRole('button', { name: 'T' })).toBeDisabled();
+      expect(screen.queryByRole('button', { name: 'Sign out' })).toBeNull();
+    });
+
+    it('keeps them signed in, with a message, when signing out fails', async () => {
+      jest.mocked(logout).mockRejectedValue(new Error('offline'));
+      const user = userEvent.setup();
+      renderPlayer();
+      await waitForGameReady();
+
+      await user.click(screen.getByRole('button', { name: 'Sign out' }));
+
+      expect(
+        await screen.findByText('Something went wrong. Try again.'),
+      ).toBeInTheDocument();
+      expect(getModal()).not.toHaveAttribute('open');
+      expect(getRowLetters(1)).toEqual(['C', 'H', 'A', 'I', 'R']);
+      expect(
+        screen.getByRole('button', { name: 'Sign out' }),
+      ).toBeInTheDocument();
     });
   });
 });

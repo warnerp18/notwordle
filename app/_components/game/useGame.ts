@@ -61,6 +61,12 @@ const useGame = (playerGame: Game | null = null) => {
     }
   };
 
+  const resetGame = () => {
+    setIsFetching(false);
+    setError(null);
+    setGame(null);
+  };
+
   return {
     isFetching,
     ...(game ?? gameInitialValue),
@@ -68,6 +74,7 @@ const useGame = (playerGame: Game | null = null) => {
     newGame,
     loadGame,
     makeGuess,
+    resetGame,
     error,
   };
 };

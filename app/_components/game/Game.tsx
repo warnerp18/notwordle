@@ -9,17 +9,21 @@ import { getKeyColors } from '@/app/lib/colors';
 import useDelayedLoading from '@/app/_hooks/useDelayedLoading';
 import AuthDialog from '@/app/_components/authentication/AuthDialog';
 import { Game as GameData } from '@/app/lib/types';
+import { logout } from '@/app/lib/server/auth/actions';
 
 export type UserType = 'unknown' | 'guest' | 'player';
 
 export default function App({
   initialUserType,
   playerGame = null,
+  email,
 }: {
   initialUserType: UserType;
   playerGame?: GameData | null;
+  email?: string;
 }) {
   const [currentGuess, setCurrentGuess] = useState('');
+  const [userEmail, setUserEmail] = useState<string | null>(email ?? null);
   const [warning, setWarning] = useState<string | null>(null);
   const [warningId, setWarningId] = useState(0);
   const [userType, setUserType] = useState<UserType>(initialUserType);
@@ -41,6 +45,7 @@ export default function App({
     newGame,
     loadGame,
     makeGuess,
+    resetGame,
     isFetching,
     error,
   } = useGame(playerGame);
@@ -104,10 +109,11 @@ export default function App({
     }
   }, [authOpen]);
 
-  const handleAuthSuccess = (game: GameData) => {
+  const handleAuthSuccess = (game: GameData, email: string) => {
     setAuthOpen(false);
     setUserType('player');
     loadGame(game);
+    setUserEmail(email);
   };
 
   const handleGuest = () => {
@@ -116,6 +122,19 @@ export default function App({
     if (userType === 'unknown') {
       setUserType('guest');
       newGame();
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      resetGame();
+      setCurrentGuess('');
+      setUserType('unknown');
+      setAuthOpen(true);
+      setUserEmail(null);
+    } catch {
+      showWarning('Something went wrong. Try again.');
     }
   };
 
@@ -137,10 +156,23 @@ export default function App({
       {userType === 'guest' && !authOpen ? (
         <button
           type="button"
-          className="absolute top-2 right-2 cursor-pointer text-sm font-bold hover:underline"
+          className="absolute top-1 right-1 cursor-pointer p-2 text-base font-bold hover:underline sm:text-sm"
           onClick={() => setAuthOpen(true)}>
           Sign in
         </button>
+      ) : null}
+      {userType === 'player' && !authOpen ? (
+        <div className="absolute top-1 right-1 flex items-center gap-1 text-base sm:text-sm">
+          {userEmail ? (
+            <p className="max-w-[45vw] truncate text-muted">{userEmail}</p>
+          ) : null}
+          <button
+            type="button"
+            className="cursor-pointer p-2 font-bold hover:underline"
+            onClick={handleLogout}>
+            Sign out
+          </button>
+        </div>
       ) : null}
       <StatusMessage
         gameOver={gameOver}

@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import {
   createSession,
+  deleteSession,
   getSessionUserId,
   setSessionCookie,
   SESSION_LENGTH_MS,
@@ -163,5 +164,48 @@ describe('getSessionUserId', () => {
     mockSql.mockResolvedValueOnce([]);
 
     expect(await getSessionUserId()).toBeNull();
+  });
+});
+
+describe('deleteSession', () => {
+  const mockDelete = jest.fn();
+
+  // a fake cookie store holding this "session" cookie value (or none)
+  const withCookie = (value?: string) =>
+    mockCookies.mockResolvedValue({
+      get: () => (value === undefined ? undefined : { value }),
+      delete: mockDelete,
+    } as unknown as Awaited<ReturnType<typeof cookies>>);
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+  });
+
+  test("deletes this browser's session row and its cookie", async () => {
+    withCookie(SESSION_ID);
+    mockSql.mockResolvedValueOnce([]);
+
+    await deleteSession();
+
+    expect(mockSql).toHaveBeenCalledTimes(1);
+    expect(mockSql.mock.calls[0].slice(1)).toEqual([SESSION_ID]);
+    expect(mockDelete).toHaveBeenCalledWith('session');
+  });
+
+  test("still deletes a cookie that isn't a real id, without asking the database", async () => {
+    withCookie('hello');
+
+    await deleteSession();
+
+    expect(mockDelete).toHaveBeenCalledWith('session');
+    expect(mockSql).not.toHaveBeenCalled();
+  });
+
+  test('does nothing to the database without a cookie', async () => {
+    withCookie();
+
+    await deleteSession();
+
+    expect(mockSql).not.toHaveBeenCalled();
   });
 });
