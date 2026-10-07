@@ -2,7 +2,6 @@ import { startTransition, useActionState, useRef } from 'react';
 import styles from './Authentication.module.css';
 import { signup } from '@/app/lib/server/auth/actions';
 import { Game } from '@/app/lib/types';
-import { readGuestGameId } from './guestGameId';
 
 interface State {
   error: string | null;
@@ -30,7 +29,7 @@ const Signup = ({
       return { error: 'Passwords must match' };
     }
 
-    const status = await signup({ email, password, gameId: readGuestGameId() });
+    const status = await signup({ email, password });
 
     if (status.error || !status.game) {
       return { error: status.error ?? 'Something went wrong. Try again.' };

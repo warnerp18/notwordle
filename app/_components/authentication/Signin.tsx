@@ -2,7 +2,6 @@ import { startTransition, useActionState, useRef } from 'react';
 import styles from './Authentication.module.css';
 import { login } from '@/app/lib/server/auth/actions';
 import { Game } from '@/app/lib/types';
-import { readGuestGameId } from './guestGameId';
 
 interface State {
   error: string | null;
@@ -24,7 +23,7 @@ const Signin = ({
     const email = String(formData.get('email') ?? '');
     const password = String(formData.get('password') ?? '');
 
-    const status = await login({ email, password, gameId: readGuestGameId() });
+    const status = await login({ email, password });
 
     if (status.error || !status.game) {
       return { error: status.error ?? 'Something went wrong. Try again.' };

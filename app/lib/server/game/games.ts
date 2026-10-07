@@ -6,6 +6,9 @@ import { sql } from '@/app/lib/server/db';
 import { ANSWER_WORDS } from './answerWords';
 import { Game, GameState } from '@/app/lib/types';
 
+// cookie holding a guest's current game id
+export const GUEST_GAME_COOKIE = 'guestGame';
+
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

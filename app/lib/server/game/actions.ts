@@ -3,17 +3,24 @@
 import { ROWS } from '@/app/lib/constants';
 import { sql } from '@/app/lib/server/db';
 import {
+  GUEST_GAME_COOKIE,
   isGameOver,
   isValidId,
   pickRandomWord,
   toGameState,
 } from '@/app/lib/server/game/games';
 import { ALLOWED_WORDS } from './allowedWords';
-import { getSessionUserId } from '@/app/lib/server/auth/sessions';
+import {
+  getSessionUserId,
+  SESSION_LENGTH_MS,
+} from '@/app/lib/server/auth/sessions';
+import { cookies } from 'next/headers';
 
 const allowedWordSet = new Set(ALLOWED_WORDS);
 
 export async function startGame() {
+  const cookieStore = await cookies();
+
   const answer = pickRandomWord();
   // signed in: the new game is theirs. Guest: null, an ownerless game.
   // Read from the session, never from an argument the browser could fake.
@@ -21,6 +28,15 @@ export async function startGame() {
 
   const [game] =
     await sql`INSERT INTO games (answer, user_id) VALUES (${answer}, ${userId}) RETURNING id`;
+
+  if (!userId) {
+    cookieStore.set(GUEST_GAME_COOKIE, game.id, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      maxAge: SESSION_LENGTH_MS / 1000,
+    });
+  }
 
   return game.id;
 }
@@ -75,5 +91,7 @@ export const getGame = async (id: string) => {
     WHERE id = ${id} AND created_at > now() - interval '24 hours'
   `;
 
-  return game ? toGameState(game.guesses, game.answer) : null;
+  return game
+    ? { ...toGameState(game.guesses, game.answer), id: game.id }
+    : null;
 };
