@@ -1,10 +1,41 @@
+/*
+  The board's box takes whatever height is left after the title and the
+  keyboard, so the keyboard always fits on screen. On short screens the board
+  shrinks to fit; it never scrolls.
+*/
+.boardArea {
+  --gap-below: 25px; /* space between the board and the keyboard */
+  flex: 1; /* take the leftover height */
+  min-height: 0; /* allowed to be smaller than the board inside */
+  /* no taller than a full-size board (+ its gap), so big screens look as before */
+  max-height: calc(var(--board-max-width) * 6 / 5 + var(--gap-below));
+  /* lets .board measure this box's height: 100cqh = this box's full height */
+  container-type: size;
+}
+
 .board {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  margin: 0 auto 25px;
-  width: 100%;
-  max-width: var(--board-max-width);
+  margin: 0 auto var(--gap-below);
+  /*
+    The smallest of: the full width, 350px, or the widest board whose 6 rows
+    still fit the box's height. 5 columns × 6 rows of square tiles with 5px
+    gaps: width = 5 tiles + 20px, height = 6 tiles + 25px. The height left for
+    the board is 100cqh minus the gap below it.
+  */
+  width: min(
+    100%,
+    var(--board-max-width),
+    calc((100cqh - var(--gap-below) - 25px) * 5 / 6 + 20px)
+  );
+}
+
+/* short phones: a smaller gap gives the board more height */
+@media (max-width: 519px) and (max-height: 850px) {
+  .boardArea {
+    --gap-below: 10px;
+  }
 }
 
 .row {

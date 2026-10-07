@@ -10,6 +10,17 @@
   margin: 50px 0;
 }
 
+/*
+  Phones that aren't very tall: less space around the title, so the board
+  gets more height (a 50px margin above and below costs 100px).
+  Desktop (520px+ wide, same breakpoint as Game's layout) keeps the 50px.
+*/
+@media (max-width: 519px) and (max-height: 850px) {
+  .container {
+    margin: 10px 0;
+  }
+}
+
 /* white box used for the answer and warnings */
 .message {
   margin: 0;

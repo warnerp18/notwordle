@@ -147,7 +147,7 @@ export default function App({
   const keyColors = getKeyColors(previousGuesses, colors);
 
   return (
-    <div className="relative mx-auto flex h-dvh w-full max-w-(--app-max-width) flex-col justify-between px-2 py-[25px] min-[520px]:justify-start">
+    <div className="relative mx-auto flex h-dvh w-full max-w-(--app-max-width) flex-col justify-between px-2 py-[25px] short-phone:py-[10px] min-[520px]:justify-start">
       <AuthDialog
         ref={modelRef}
         onSuccess={handleAuthSuccess}

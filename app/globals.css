@@ -1,6 +1,12 @@
 @import 'tailwindcss';
 
 /*
+  "short-phone:" in Tailwind classes = phone-width screens that aren't very
+  tall. Same numbers as the @media rules in StatusMessage and Board CSS.
+*/
+@custom-variant short-phone (@media (max-width: 519px) and (max-height: 850px));
+
+/*
   Colors + font live in @theme so they work both ways:
   - as CSS variables in .module.css files: var(--color-correct)
   - as Tailwind classes in JSX: bg-correct, text-muted
