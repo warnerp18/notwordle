@@ -15,7 +15,6 @@ jest.mock('@/app/lib/server/db', () => ({ sql: jest.fn() }));
 // who's signed in: each test decides (cookies only work in a real request)
 jest.mock('@/app/lib/server/auth/sessions', () => ({
   getSessionUserId: jest.fn(),
-  SESSION_LENGTH_MS: 7 * 24 * 60 * 60 * 1000,
 }));
 
 // cookies() only works in a real request; tests check what gets set
@@ -152,7 +151,8 @@ describe('startGame', () => {
         httpOnly: true,
         secure: true,
         sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60,
+        // a guest game only lasts a day, so the cookie does too
+        maxAge: 24 * 60 * 60,
       }),
     );
   });

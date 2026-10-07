@@ -6,6 +6,10 @@ import { sql } from '@/app/lib/server/db';
 import { ANSWER_WORDS } from './answerWords';
 import { Game, GameState } from '@/app/lib/types';
 
+const GAME_LENGTH_DAYS = 1;
+export const GAME_LENGTH_HOURS = 24 * GAME_LENGTH_DAYS;
+export const GAME_LENGTH_SECS = GAME_LENGTH_DAYS * 24 * 60 * 60;
+
 // cookie holding a guest's current game id
 export const GUEST_GAME_COOKIE = 'guestGame';
 
@@ -42,7 +46,7 @@ export const claimGame = async (gameId: string | undefined, userId: string) => {
   SET user_id = ${userId}
   WHERE id = ${gameId}
     AND user_id IS NULL
-    AND created_at > now() - interval '24 hours'
+    AND created_at > now() - ${GAME_LENGTH_HOURS} * interval '1 hour'
 RETURNING guesses, answer, id
   `;
 
@@ -62,7 +66,7 @@ export const findCurrentGame = async (userId: string) => {
   const [game] = await sql`
     SELECT guesses, answer, id FROM games
     WHERE user_id = ${userId}
-      AND created_at > now() - interval '24 hours'
+      AND created_at > now() - ${GAME_LENGTH_HOURS} * interval '1 hour'
       AND COALESCE(array_length(guesses, 1), 0) < ${ROWS}
       AND NOT(answer = ANY(guesses))
     ORDER BY created_at DESC

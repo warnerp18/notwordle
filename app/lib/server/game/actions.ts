@@ -3,6 +3,8 @@
 import { ROWS } from '@/app/lib/constants';
 import { sql } from '@/app/lib/server/db';
 import {
+  GAME_LENGTH_HOURS,
+  GAME_LENGTH_SECS,
   GUEST_GAME_COOKIE,
   isGameOver,
   isValidId,
@@ -10,10 +12,7 @@ import {
   toGameState,
 } from '@/app/lib/server/game/games';
 import { ALLOWED_WORDS } from './allowedWords';
-import {
-  getSessionUserId,
-  SESSION_LENGTH_MS,
-} from '@/app/lib/server/auth/sessions';
+import { getSessionUserId } from '@/app/lib/server/auth/sessions';
 import { cookies } from 'next/headers';
 
 const allowedWordSet = new Set(ALLOWED_WORDS);
@@ -34,7 +33,7 @@ export async function startGame() {
       httpOnly: true,
       secure: true,
       sameSite: 'lax',
-      maxAge: SESSION_LENGTH_MS / 1000,
+      maxAge: GAME_LENGTH_SECS,
     });
   }
 
@@ -88,7 +87,7 @@ export const getGame = async (id: string) => {
 
   const [game] = await sql`
     SELECT * FROM games
-    WHERE id = ${id} AND created_at > now() - interval '24 hours'
+    WHERE id = ${id} AND created_at > now() - ${GAME_LENGTH_HOURS} * interval '1 hour'
   `;
 
   return game
