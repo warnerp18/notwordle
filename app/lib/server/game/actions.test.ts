@@ -4,6 +4,7 @@
 import { startGame, submitGuess } from './actions';
 import { sql } from '@/app/lib/server/db';
 import { getSessionUserId } from '@/app/lib/server/auth/sessions';
+import { cookies } from 'next/headers';
 
 // server-only throws outside a server build, so switch it off for tests
 jest.mock('server-only', () => ({}));
@@ -14,10 +15,16 @@ jest.mock('@/app/lib/server/db', () => ({ sql: jest.fn() }));
 // who's signed in: each test decides (cookies only work in a real request)
 jest.mock('@/app/lib/server/auth/sessions', () => ({
   getSessionUserId: jest.fn(),
+  SESSION_LENGTH_MS: 7 * 24 * 60 * 60 * 1000,
 }));
+
+// cookies() only works in a real request; tests check what gets set
+jest.mock('next/headers', () => ({ cookies: jest.fn() }));
 
 const mockSql = jest.mocked(sql);
 const mockGetSessionUserId = jest.mocked(getSessionUserId);
+const mockCookies = jest.mocked(cookies);
+const mockCookieSet = jest.fn();
 
 const GAME_ID = '3f2b8c1e-4d5a-4b6c-8d7e-9f0a1b2c3d4e';
 
@@ -114,6 +121,7 @@ describe('startGame', () => {
   beforeEach(() => {
     jest.resetAllMocks();
     mockSql.mockResolvedValue([{ id: GAME_ID }]);
+    mockCookies.mockResolvedValue({ set: mockCookieSet } as never);
   });
 
   it("makes a signed-in player's new game theirs", async () => {
@@ -130,5 +138,30 @@ describe('startGame', () => {
     await startGame();
 
     expect(mockSql.mock.calls[0][2]).toBeNull();
+  });
+
+  it("remembers a guest's game in an httpOnly cookie", async () => {
+    mockGetSessionUserId.mockResolvedValue(null);
+
+    await startGame();
+
+    expect(mockCookieSet).toHaveBeenCalledWith(
+      'guestGame',
+      GAME_ID,
+      expect.objectContaining({
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60,
+      }),
+    );
+  });
+
+  it("doesn't give a signed-in player the guest cookie", async () => {
+    mockGetSessionUserId.mockResolvedValue(USER_ID);
+
+    await startGame();
+
+    expect(mockCookieSet).not.toHaveBeenCalled();
   });
 });

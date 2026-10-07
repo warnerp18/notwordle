@@ -7,6 +7,7 @@ import {
   createGame,
   findCurrentGame,
 } from '@/app/lib/server/game/games';
+import { cookies } from 'next/headers';
 
 // server-only throws outside a server build, so switch it off for tests
 jest.mock('server-only', () => ({}));
@@ -34,6 +35,8 @@ jest.mock('@/app/lib/server/game/games', () => ({
   createGame: jest.fn(),
   findCurrentGame: jest.fn(),
 }));
+// cookies() only works in a real request, so each test fills a fake jar
+jest.mock('next/headers', () => ({ cookies: jest.fn() }));
 
 const mockHashPassword = jest.mocked(hashPassword);
 const mockSaveUser = jest.mocked(saveUser);
@@ -45,6 +48,17 @@ const mockVerifyPassword = jest.mocked(verifyPassword);
 const mockFindUser = jest.mocked(findUser);
 const mockDeleteSession = jest.mocked(deleteSession);
 const mockFindCurrentGame = jest.mocked(findCurrentGame);
+const mockCookies = jest.mocked(cookies);
+const mockCookieDelete = jest.fn();
+
+// the browser's cookies for this request, e.g. { guestGame: '...' }
+const mockCookieJar = (jar: Record<string, string> = {}) => {
+  mockCookies.mockResolvedValue({
+    get: (name: string) =>
+      name in jar ? { name, value: jar[name] } : undefined,
+    delete: mockCookieDelete,
+  } as never);
+};
 
 // `const [row] = await sql...` is undefined when nothing matches, but the
 // loose row types say it's always a row, so tests need a cast to say "no row"
@@ -76,6 +90,7 @@ const mockEverythingWorks = () => {
 describe('signup', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    mockCookieJar();
   });
 
   describe('when it works', () => {
@@ -151,11 +166,12 @@ describe('signup', () => {
   });
 
   describe('the game', () => {
-    test("claims the guest's game when one is sent", async () => {
+    test("claims the game in the guest's cookie", async () => {
       mockEverythingWorks();
       mockClaimGame.mockReset().mockResolvedValueOnce(GUEST_GAME);
+      mockCookieJar({ guestGame: GUEST_GAME_ID });
 
-      const result = await signup({ ...GOOD_INPUT, gameId: GUEST_GAME_ID });
+      const result = await signup(GOOD_INPUT);
 
       expect(mockClaimGame).toHaveBeenCalledWith(GUEST_GAME_ID, USER_ID);
       expect(mockCreateGame).not.toHaveBeenCalled();
@@ -164,26 +180,39 @@ describe('signup', () => {
 
     test('creates a new game for the user when nothing was claimed', async () => {
       mockEverythingWorks();
+      mockCookieJar({ guestGame: GUEST_GAME_ID });
 
-      const result = await signup({ ...GOOD_INPUT, gameId: GUEST_GAME_ID });
+      const result = await signup(GOOD_INPUT);
 
       expect(mockCreateGame).toHaveBeenCalledWith(USER_ID);
       expect(result).toMatchObject({ game: { id: NEW_GAME_ID } });
     });
 
-    test('creates a new game when no gameId is sent', async () => {
+    test("creates a new game when there's no guest cookie", async () => {
       mockEverythingWorks();
 
       await signup(GOOD_INPUT);
 
+      expect(mockClaimGame).toHaveBeenCalledWith(undefined, USER_ID);
       expect(mockCreateGame).toHaveBeenCalledWith(USER_ID);
+    });
+
+    test('deletes the guest cookie, since they are a player now', async () => {
+      mockEverythingWorks();
+      mockCookieJar({ guestGame: GUEST_GAME_ID });
+
+      await signup(GOOD_INPUT);
+
+      expect(mockCookieDelete).toHaveBeenCalledWith('guestGame');
     });
 
     test('sends the game state with colors, and hides the answer mid-game', async () => {
       mockEverythingWorks();
       mockClaimGame.mockReset().mockResolvedValueOnce(GUEST_GAME);
 
-      const result = await signup({ ...GOOD_INPUT, gameId: GUEST_GAME_ID });
+      mockCookieJar({ guestGame: GUEST_GAME_ID });
+
+      const result = await signup(GOOD_INPUT);
 
       expect(result).toEqual({
         email: 'Name+Wordle@Gmail.com',
@@ -202,8 +231,9 @@ describe('signup', () => {
       mockClaimGame
         .mockReset()
         .mockResolvedValueOnce({ ...GUEST_GAME, guesses: ['CRANE', 'REACT'] });
+      mockCookieJar({ guestGame: GUEST_GAME_ID });
 
-      const result = await signup({ ...GOOD_INPUT, gameId: GUEST_GAME_ID });
+      const result = await signup(GOOD_INPUT);
 
       expect(result).toMatchObject({ game: { answer: 'REACT' } });
     });
@@ -257,6 +287,14 @@ describe('signup', () => {
       expect(mockCreateSession).not.toHaveBeenCalled();
       expect(mockSetSessionCookie).not.toHaveBeenCalled();
     });
+
+    test('keeps the guest cookie, so they can still play or sign in', async () => {
+      mockCookieJar({ guestGame: GUEST_GAME_ID });
+
+      await signup(GOOD_INPUT);
+
+      expect(mockCookieDelete).not.toHaveBeenCalled();
+    });
   });
 
   describe('when something unexpected fails', () => {
@@ -290,6 +328,7 @@ describe('login', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    mockCookieJar();
   });
 
   describe('when it fails', () => {
@@ -330,6 +369,16 @@ describe('login', () => {
       expect(mockCreateSession).not.toHaveBeenCalled();
       expect(mockSetSessionCookie).not.toHaveBeenCalled();
       expect(mockClaimGame).not.toHaveBeenCalled();
+    });
+
+    test('keeps the guest cookie', async () => {
+      mockFindUser.mockResolvedValueOnce(STORED_USER);
+      mockVerifyPassword.mockResolvedValueOnce(false);
+      mockCookieJar({ guestGame: GUEST_GAME_ID });
+
+      await login(LOGIN_INPUT);
+
+      expect(mockCookieDelete).not.toHaveBeenCalled();
     });
   });
 
@@ -380,17 +429,27 @@ describe('login', () => {
       );
     });
 
-    test('claims the guest game first', async () => {
+    test("claims the game in the guest's cookie first", async () => {
       mockFindUser.mockResolvedValueOnce(STORED_USER);
       mockVerifyPassword.mockResolvedValueOnce(true);
       mockClaimGame.mockResolvedValueOnce(GUEST_GAME);
       mockCreateSession.mockResolvedValueOnce(SESSION_ID);
+      mockCookieJar({ guestGame: GUEST_GAME_ID });
 
-      const result = await login({ ...LOGIN_INPUT, gameId: GUEST_GAME_ID });
+      const result = await login(LOGIN_INPUT);
 
       expect(mockClaimGame).toHaveBeenCalledWith(GUEST_GAME_ID, USER_ID);
       expect(mockFindCurrentGame).not.toHaveBeenCalled();
       expect(result).toMatchObject({ game: { id: GUEST_GAME_ID } });
+    });
+
+    test('deletes the guest cookie', async () => {
+      mockGoodLogin();
+      mockCookieJar({ guestGame: GUEST_GAME_ID });
+
+      await login(LOGIN_INPUT);
+
+      expect(mockCookieDelete).toHaveBeenCalledWith('guestGame');
     });
 
     test('creates a game when there is nothing to claim and no current game', async () => {

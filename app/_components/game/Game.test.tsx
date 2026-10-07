@@ -21,8 +21,6 @@ jest.mock('@/app/lib/server/game/actions', () => {
   });
 
   return {
-    // nothing to resume unless this fake game has guesses
-    getGame: jest.fn(async () => (mockGuesses.length ? mockState() : null)),
     startGame: jest.fn(async () => {
       mockGuesses = [];
       return 'test-game-id';
@@ -57,7 +55,7 @@ const waitForGameReady = () =>
 
 // a first visit: the modal asks, and the player picks "Play as guest"
 const renderGame = async (user = userEvent.setup()) => {
-  render(<Game authenticated={false} />);
+  render(<Game initialUserType="unknown" />);
   await user.click(screen.getByRole('button', { name: 'Play as guest' }));
   await waitForGameReady();
 };
@@ -81,7 +79,6 @@ describe('<Game />', () => {
   beforeEach(() => {
     mockAnswer = 'REACT';
     mockGuesses = [];
-    localStorage.clear();
     jest.mocked(startGame).mockClear();
     jest.mocked(signup).mockReset();
     jest.mocked(login).mockReset();
@@ -278,36 +275,9 @@ describe('<Game />', () => {
     );
   });
 
-  it('brings back the board after a refresh', async () => {
-    const user = userEvent.setup();
-    const { unmount } = render(<Game authenticated={false} />);
-    await user.click(screen.getByRole('button', { name: 'Play as guest' }));
-    await waitForGameReady();
-
-    await user.keyboard('chair{Enter}');
-    await waitFor(() => expect(getRowLabels(1)[0]).toBe('C, present'));
-
-    // a refresh: the page goes away and loads again. They chose guest last
-    // time, so the saved game comes straight back without the modal.
-    unmount();
-    render(<Game authenticated={false} />);
-    await waitForGameReady();
-    expect(getModal()).not.toHaveAttribute('open');
-
-    expect(getRowLabels(1)).toEqual([
-      'C, present',
-      'H, absent',
-      'A, correct',
-      'I, absent',
-      'R, present',
-    ]);
-    expect(screen.getByRole('group', { current: true })).toHaveAccessibleName(
-      'Row 2',
-    );
-  });
   describe('sign up modal', () => {
     it('asks on a first visit and keeps the game locked', async () => {
-      render(<Game authenticated={false} />);
+      render(<Game initialUserType="unknown" />);
 
       expect(getModal()).toHaveAttribute('open');
       expect(screen.getByRole('button', { name: 'T' })).toBeDisabled();
@@ -319,24 +289,33 @@ describe('<Game />', () => {
 
       expect(getModal()).not.toHaveAttribute('open');
       expect(startGame).toHaveBeenCalledTimes(1);
-      expect(localStorage.getItem('gameId')).toBe('test-game-id');
     });
 
-    it("doesn't ask a returning guest", async () => {
-      localStorage.setItem('gameId', 'test-game-id');
-      mockGuesses = ['CHAIR'];
+    // page.tsx found their guest cookie and sent their game with the page
+    it("doesn't ask a returning guest, and shows the game the server sent", async () => {
+      render(
+        <Game
+          initialUserType="guest"
+          playerGame={{
+            id: 'guest-1',
+            previousGuesses: ['CHAIR'],
+            colors: [['yellow', 'gray', 'green', 'gray', 'yellow']],
+            answer: null,
+          }}
+        />,
+      );
 
-      render(<Game authenticated={false} />);
       await waitForGameReady();
-
       expect(getModal()).not.toHaveAttribute('open');
       expect(getRowLetters(1)).toEqual(['C', 'H', 'A', 'I', 'R']);
+      expect(screen.getByRole('button', { name: 'Sign in' })).toBeVisible();
+      expect(startGame).not.toHaveBeenCalled();
     });
 
     it('shows a signed-in player the game the server sent, with no modal', async () => {
       render(
         <Game
-          authenticated={true}
+          initialUserType="player"
           playerGame={{
             id: 'player-1',
             previousGuesses: ['CHAIR'],
@@ -353,7 +332,7 @@ describe('<Game />', () => {
 
     it('keeps what they typed when the passwords differ', async () => {
       const user = userEvent.setup();
-      render(<Game authenticated={false} />);
+      render(<Game initialUserType="unknown" />);
 
       await fillSignup(user, 'hunter22', 'hunter23');
       await screen.findByText('Passwords must match');
@@ -365,7 +344,7 @@ describe('<Game />', () => {
 
     it("shows a message and doesn't sign up when the passwords differ", async () => {
       const user = userEvent.setup();
-      render(<Game authenticated={false} />);
+      render(<Game initialUserType="unknown" />);
 
       await fillSignup(user, 'hunter22', 'hunter23');
 
@@ -381,7 +360,7 @@ describe('<Game />', () => {
         error: 'An account with that email already exists. Try signing in.',
       });
       const user = userEvent.setup();
-      render(<Game authenticated={false} />);
+      render(<Game initialUserType="unknown" />);
 
       await fillSignup(user);
 
@@ -405,7 +384,7 @@ describe('<Game />', () => {
         },
       });
       const user = userEvent.setup();
-      render(<Game authenticated={false} />);
+      render(<Game initialUserType="unknown" />);
 
       await fillSignup(user);
 
@@ -413,30 +392,9 @@ describe('<Game />', () => {
       expect(signup).toHaveBeenCalledWith({
         email: 'a@b.com',
         password: 'hunter22',
-        gameId: '',
       });
       expect(getModal()).not.toHaveAttribute('open');
       expect(getRowLetters(1)).toEqual(['C', 'H', 'A', 'I', 'R']);
-    });
-
-    it('sends the guest game id so it can be claimed', async () => {
-      localStorage.setItem('gameId', 'guest-1');
-      // a game with a guess, so it resumes (an empty one counts as expired)
-      mockGuesses = ['CHAIR'];
-      jest.mocked(signup).mockResolvedValue({ error: 'stop here' });
-      const user = userEvent.setup();
-      render(<Game authenticated={false} />);
-      await waitForGameReady();
-      // a returning guest; open the modal the way a sign-up button would
-      await user.click(screen.getByRole('button', { name: 'Sign in' }));
-
-      await fillSignup(user);
-
-      await waitFor(() =>
-        expect(signup).toHaveBeenCalledWith(
-          expect.objectContaining({ gameId: 'guest-1' }),
-        ),
-      );
     });
   });
   describe('sign in', () => {
@@ -450,7 +408,7 @@ describe('<Game />', () => {
     };
 
     it('is the form the modal opens on', () => {
-      render(<Game authenticated={false} />);
+      render(<Game initialUserType="unknown" />);
 
       expect(
         screen.getByRole('heading', { name: 'Sign in', hidden: true }),
@@ -460,7 +418,7 @@ describe('<Game />', () => {
 
     it('switches to sign up and back', async () => {
       const user = userEvent.setup();
-      render(<Game authenticated={false} />);
+      render(<Game initialUserType="unknown" />);
 
       await user.click(
         screen.getByRole('button', { name: 'Create an account' }),
@@ -476,7 +434,7 @@ describe('<Game />', () => {
         .mocked(login)
         .mockResolvedValue({ error: 'Incorrect email or password' });
       const user = userEvent.setup();
-      render(<Game authenticated={false} />);
+      render(<Game initialUserType="unknown" />);
 
       await fillSignin(user, 'wrong-one');
 
@@ -499,7 +457,7 @@ describe('<Game />', () => {
         },
       });
       const user = userEvent.setup();
-      render(<Game authenticated={false} />);
+      render(<Game initialUserType="unknown" />);
 
       await fillSignin(user);
 
@@ -507,7 +465,6 @@ describe('<Game />', () => {
       expect(login).toHaveBeenCalledWith({
         email: 'a@b.com',
         password: 'hunter22',
-        gameId: '',
       });
       expect(getModal()).not.toHaveAttribute('open');
       expect(getRowLetters(1)).toEqual(['C', 'H', 'A', 'I', 'R']);
@@ -519,7 +476,7 @@ describe('<Game />', () => {
         game: { id: 'player-1', previousGuesses: [], colors: [], answer: null },
       });
       const user = userEvent.setup();
-      render(<Game authenticated={false} />);
+      render(<Game initialUserType="unknown" />);
 
       await fillSignin(user);
       await waitForGameReady();
@@ -556,7 +513,7 @@ describe('<Game />', () => {
     it("doesn't show the guest button to a signed-in player", async () => {
       render(
         <Game
-          authenticated={true}
+          initialUserType="player"
           playerGame={{
             id: 'player-1',
             previousGuesses: [],
