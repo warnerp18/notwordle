@@ -418,6 +418,37 @@ describe('<Game />', () => {
       expect(screen.queryByLabelText('Confirm password')).toBeNull();
     });
 
+    it('shows and hides the password with the eye button', async () => {
+      const user = userEvent.setup();
+      render(<Game initialUserType="unknown" />);
+      const password = screen.getByLabelText('Password');
+
+      expect(password).toHaveAttribute('type', 'password');
+
+      await user.click(screen.getByRole('button', { name: 'Show password' }));
+      expect(password).toHaveAttribute('type', 'text');
+
+      await user.click(screen.getByRole('button', { name: 'Hide password' }));
+      expect(password).toHaveAttribute('type', 'password');
+    });
+
+    it('lets each sign-up password field be shown on its own', async () => {
+      const user = userEvent.setup();
+      render(<Game initialUserType="unknown" />);
+      await user.click(
+        screen.getByRole('button', { name: 'Create an account' }),
+      );
+
+      const [first] = screen.getAllByRole('button', { name: 'Show password' });
+      await user.click(first);
+
+      expect(screen.getByLabelText('Password')).toHaveAttribute('type', 'text');
+      expect(screen.getByLabelText('Confirm password')).toHaveAttribute(
+        'type',
+        'password',
+      );
+    });
+
     it('switches to sign up and back', async () => {
       const user = userEvent.setup();
       render(<Game initialUserType="unknown" />);

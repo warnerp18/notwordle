@@ -1,5 +1,6 @@
 import { startTransition, useActionState, useRef } from 'react';
 import styles from './Authentication.module.css';
+import PasswordInput from './PasswordInput';
 import { signup } from '@/app/lib/server/auth/actions';
 import { Game } from '@/app/lib/types';
 
@@ -74,24 +75,10 @@ const Signup = ({
         />
 
         <label htmlFor="password">Password</label>
-        <input
-          type="password"
-          id="password"
-          className={styles.input}
-          name="password"
-          autoComplete="new-password"
-          required
-        />
+        <PasswordInput id="password" autoComplete="new-password" />
         <p>At least 8 characters</p>
         <label htmlFor="verifyPassword">Confirm password </label>
-        <input
-          type="password"
-          id="verifyPassword"
-          className={styles.input}
-          name="verifyPassword"
-          autoComplete="new-password"
-          required
-        />
+        <PasswordInput id="verifyPassword" autoComplete="new-password" />
 
         <button disabled={pending}>Create account</button>
         <div className={styles.divider}>or</div>

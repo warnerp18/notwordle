@@ -1,5 +1,6 @@
 import { startTransition, useActionState, useRef } from 'react';
 import styles from './Authentication.module.css';
+import PasswordInput from './PasswordInput';
 import { login } from '@/app/lib/server/auth/actions';
 import { Game } from '@/app/lib/types';
 
@@ -67,14 +68,7 @@ const Signin = ({
         />
 
         <label htmlFor="password">Password</label>
-        <input
-          type="password"
-          id="password"
-          className={styles.input}
-          name="password"
-          autoComplete="current-password"
-          required
-        />
+        <PasswordInput id="password" autoComplete="current-password" />
 
         <button disabled={pending}>Sign in</button>
         <div className={styles.divider}>or</div>

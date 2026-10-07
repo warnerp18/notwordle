@@ -85,6 +85,37 @@
   border-color: var(--color-muted);
 }
 
+/* password input with the show/hide button sitting inside its right edge */
+.passwordField {
+  position: relative;
+  display: flex;
+}
+
+.passwordField .input {
+  flex: 1;
+  padding-right: 48px; /* typed text stops before the button */
+}
+
+.showPassword {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.showPassword:hover {
+  color: var(--color-text);
+}
+
 .form > button {
   height: 48px;
   margin-top: 8px;
