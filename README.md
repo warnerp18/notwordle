@@ -4,6 +4,8 @@ A Wordle-style word game built with Next.js. Guess the hidden five-letter word i
 
 **Play it:** [notwordle.app](https://notwordle.app)
 
+**Case study:** [How I built it](https://philwarner.dev/projects/notwordle/), on [philwarner.dev](https://philwarner.dev/)
+
 ![Not Wordle](public/screenshot.png)
 
 ## Features
